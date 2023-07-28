@@ -217,23 +217,30 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
             allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
 
-            List<CompletableFuture<String>> futures = new ArrayList<>();
+            List<CompletableFuture<String>> futuresStr = new ArrayList<>();
+            List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
+            int boardSize = Math.min(limit, allSenders.size());
 
-            for (int i = 0; i < limit && i < allSenders.size(); i++) {
+            LOGGER.debug("Board size: %s", boardSize);
+
+            for (int i = 0; i < boardSize; i++) {
                 Entry<Long, Integer> entry = allSenders.get(i);
                 int pos = i;
 
-                CompletableFuture<String> future = new CompletableFuture<>();
-                future.thenAcceptAsync(s -> topSenders.add(new Triple<>(entry.getKey(), s, entry.getValue())));
-                futures.add(future);
+                val futureStr = new CompletableFuture<String>();
+                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s,
+                        entry.getValue())));
+
+                futuresStr.add(futureStr);
+                futuresVoid.add(futureVoid);
 
                 guild.retrieveMemberById(entry.getKey()).queue(member -> {
-                    futures.get(pos).complete(member.getEffectiveName());
+                    futuresStr.get(pos).complete(member.getEffectiveName());
                 }, ex -> {
                     jda.retrieveUserById(entry.getKey()).queue(user -> {
-                        futures.get(pos).complete(user.getEffectiveName());
+                        futuresStr.get(pos).complete(user.getEffectiveName());
                     }, ex2 -> {
-                        futures.get(pos).complete("Unknown");
+                        futuresStr.get(pos).complete("Unknown");
                     });
                 });
             }
@@ -241,7 +248,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
             time = System.currentTimeMillis();
-            futures.forEach(CompletableFuture::join);
+            futuresVoid.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
             topSenders.sort((a, b) -> {
