@@ -213,8 +213,8 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
-            Triple<Long, String, Integer>[] topSenders = new Triple[10];
             List<Entry<Long, Integer>> allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
+            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
             allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
 
             List<CompletableFuture<String>> futures = new ArrayList<>();
@@ -224,7 +224,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
                 int pos = i;
 
                 CompletableFuture<String> future = new CompletableFuture<>();
-                future.thenAcceptAsync(s -> topSenders[pos] = new Triple<>(entry.getKey(), s, entry.getValue()));
+                future.thenAcceptAsync(s -> topSenders.add(new Triple<>(entry.getKey(), s, entry.getValue())));
                 futures.add(future);
 
                 guild.retrieveMemberById(entry.getKey()).queue(member -> {
@@ -244,7 +244,11 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             futures.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
-            return Arrays.asList(topSenders);
+            topSenders.sort((a, b) -> {
+                return b.getC() - a.getC();
+            });
+
+            return topSenders;
         } finally {
             this.readLock.unlock();
         }
