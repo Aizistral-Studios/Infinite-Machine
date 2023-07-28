@@ -2,6 +2,7 @@ package com.aizistral.infmachine.database.local;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import org.jetbrains.annotations.Nullable;
@@ -19,18 +21,22 @@ import com.aizistral.infmachine.data.ChannelType;
 import com.aizistral.infmachine.data.IndexationMode;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
+import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
 import com.aizistral.infmachine.utils.Tuple;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.val;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 
 public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements MachineDatabase {
+    private static final StandardLogger LOGGER = new StandardLogger("JSONDatabase");
     public static final JSONDatabase INSTANCE = new JSONDatabase();
 
     private JSONDatabase() {
@@ -184,51 +190,68 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
         }
     }
 
-    @Nullable
-    private Member getGuildMember(Guild guild, long userID) {
-        Member member = null;
-
-        try {
-            member = guild.retrieveMemberById(userID).useCache(true).submit().join();
-        } catch (CompletionException ex) {
-            // NO-OP
-        }
-
-        return member;
-    }
-
-    private boolean isGuildMember(Guild guild, long userID) {
-        return this.getGuildMember(guild, userID) != null;
-    }
+    //    @Nullable
+    //    private Member getGuildMember(Guild guild, long userID) {
+    //        Member member = null;
+    //
+    //        try {
+    //            member = guild.retrieveMemberById(userID).useCache(true).submit().join();
+    //        } catch (CompletionException ex) {
+    //            // NO-OP
+    //        }
+    //
+    //        return member;
+    //    }
+    //
+    //    private boolean isGuildMember(Guild guild, long userID) {
+    //        return this.getGuildMember(guild, userID) != null;
+    //    }
 
     @Override
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(Guild guild, int limit) {
+    @SuppressWarnings("unchecked")
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int limit) {
         try {
             this.readLock.lock();
-            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
+            long time = System.currentTimeMillis();
+            Triple<Long, String, Integer>[] topSenders = new Triple[10];
             List<Entry<Long, Integer>> allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
             allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
 
+            List<CompletableFuture<String>> futures = new ArrayList<>();
+
             for (int i = 0; i < limit && i < allSenders.size(); i++) {
                 Entry<Long, Integer> entry = allSenders.get(i);
-                Member member = this.getGuildMember(guild, entry.getKey());
+                int pos = i;
 
-                if (member == null) {
-                    limit++;
-                    continue;
-                }
+                CompletableFuture<String> future = new CompletableFuture<>();
+                future.thenAcceptAsync(s -> topSenders[pos] = new Triple<>(entry.getKey(), s, entry.getValue()));
+                futures.add(future);
 
-                topSenders.add(new Triple<>(entry.getKey(), member.getEffectiveName(), entry.getValue()));
+                guild.retrieveMemberById(entry.getKey()).queue(member -> {
+                    futures.get(pos).complete(member.getEffectiveName());
+                }, ex -> {
+                    jda.retrieveUserById(entry.getKey()).queue(user -> {
+                        futures.get(pos).complete(user.getEffectiveName());
+                    }, ex2 -> {
+                        futures.get(pos).complete("Unknown");
+                    });
+                });
             }
 
-            return topSenders;
+            LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+            time = System.currentTimeMillis();
+            futures.forEach(CompletableFuture::join);
+            LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+            return Arrays.asList(topSenders);
         } finally {
             this.readLock.unlock();
         }
     }
 
     @Override
-    public Tuple<Integer, Integer> getSenderRating(Guild guild, long userID) {
+    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID) {
         try {
             this.readLock.lock();
             int rating = 1;
@@ -236,9 +259,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
             for (val entry : this.getData().messageCounts.entrySet()) {
                 if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {
-                    if (this.isGuildMember(guild, entry.getKey().longValue())) {
-                        rating++;
-                    }
+                    rating++;
                 }
             }
 

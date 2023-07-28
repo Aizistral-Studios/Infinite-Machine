@@ -80,9 +80,8 @@ public class InfiniteMachine extends ListenerAdapter {
                 Commands.slash("terminate", "Halt and catch fire")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("leaderboard", "Show top 10 people in the server by message count"),
-                // TODO Implement this REASONABLY
-                //Commands.slash("rating", "Show user's position in leaderboard by message count")
-                //.addOption(OptionType.USER, "user", "User to show the position of", false),
+                Commands.slash("rating", "Show user's position in leaderboard by message count")
+                .addOption(OptionType.USER, "user", "User to show the position of", false),
                 Commands.slash("clearindex", "Clear all previous message indexation and counts")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("openvoting", "Vote on specified user")
@@ -187,7 +186,7 @@ public class InfiniteMachine extends ListenerAdapter {
             event.reply(this.config.getMsgTermination()).submit().whenCompleteAsync((a, b) -> this.shutdown());
         } else if ("leaderboard".equals(event.getName())) {
             event.deferReply().flatMap(v -> {
-                val senders = this.getDatabase().getTopMessageSenders(this.domain, 10);
+                val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, 10);
                 String reply = this.config.getMsgLeaderboardHeader() + "\n";
 
                 for (int i = 0; i < senders.size(); i++) {
@@ -206,12 +205,12 @@ public class InfiniteMachine extends ListenerAdapter {
 
                 if (mapping != null && mapping.getAsUser() != event.getUser()) {
                     user = mapping.getAsUser();
-                    val rating = this.database.getSenderRating(this.domain, user.getIdLong());
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
                     message = String.format(this.config.getMsgRating(), user.getIdLong(), rating.getA(),
                             rating.getB());
                 } else {
                     user = event.getUser();
-                    val rating = this.database.getSenderRating(this.domain, user.getIdLong());
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
                     message = String.format(this.config.getMsgRatingOwn(), rating.getA(), rating.getB());
                 }
 

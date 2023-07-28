@@ -9,6 +9,7 @@ import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.utils.Triple;
 import com.aizistral.infmachine.utils.Tuple;
 
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 
 public interface MachineDatabase {
@@ -37,9 +38,9 @@ public interface MachineDatabase {
 
     public void resetIndexation();
 
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(Guild guild, int limit);
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int limit);
 
-    public Tuple<Integer, Integer> getSenderRating(Guild guild, long userID);
+    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
 
     public void forceSave();
 
