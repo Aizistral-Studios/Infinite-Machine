@@ -224,6 +224,15 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
+    public String getMsgLeaderboardHeaderAlt() {
+        try {
+            this.readLock.lock();
+            return this.getData().msgLeaderboardHeaderAlt;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
     public String getMsgLeaderboardEntry() {
         try {
             this.readLock.lock();
@@ -434,6 +443,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         private String msgIndexReset = "Indexation reset successfully!";
         private String msgTermination = "Executing halt-and-catch-fire protocol...";
         private String msgLeaderboardHeader = "**Top 10 Most Active Human-Like Entities:**";
+        private String msgLeaderboardHeaderAlt = "**Most Active Human-Like Entities (Positions %s - %s):**";
         private String msgLeaderboardEntry = "%1$s. **%2$s** (<@%3$s>): %4$s messages";
         private String msgVotingCmdSuccess = "Succesfully opened voting for user <@%s>!";
         private String msgVotingCmdFail = "Failed to open a new voting for user <@%s>. Is there one already?";

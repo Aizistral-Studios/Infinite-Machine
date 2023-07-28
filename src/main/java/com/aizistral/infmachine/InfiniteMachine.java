@@ -79,7 +79,8 @@ public class InfiniteMachine extends ListenerAdapter {
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("terminate", "Halt and catch fire")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
-                Commands.slash("leaderboard", "Show top 10 people in the server by message count"),
+                Commands.slash("leaderboard", "Show top-10 people in the server by message count")
+                .addOption(OptionType.INTEGER, "start", "Start listing people from this position", false),
                 Commands.slash("rating", "Show user's position in leaderboard by message count")
                 .addOption(OptionType.USER, "user", "User to show the position of", false),
                 Commands.slash("clearindex", "Clear all previous message indexation and counts")
@@ -187,12 +188,21 @@ public class InfiniteMachine extends ListenerAdapter {
             event.reply(this.config.getMsgTermination()).submit().whenCompleteAsync((a, b) -> this.shutdown());
         } else if ("leaderboard".equals(event.getName())) {
             event.deferReply().flatMap(v -> {
-                val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, 10);
-                String reply = this.config.getMsgLeaderboardHeader() + "\n";
+                val option = event.getOption("start");
+                int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+
+                val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, start, 10);
+                String reply = "";
+
+                if (start == 1) {
+                    reply += this.config.getMsgLeaderboardHeader() + "\n";
+                } else {
+                    reply += String.format(this.config.getMsgLeaderboardHeaderAlt(), start, start + 9) + "\n";
+                }
 
                 for (int i = 0; i < senders.size(); i++) {
                     val triple = senders.get(i);
-                    reply += String.format("\n" + this.config.getMsgLeaderboardEntry(), i + 1, triple.getB(),
+                    reply += String.format("\n" + this.config.getMsgLeaderboardEntry(), i + start, triple.getB(),
                             triple.getA(), triple.getC());
                 }
 

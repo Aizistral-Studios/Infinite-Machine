@@ -209,7 +209,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int limit) {
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit) {
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
@@ -219,13 +219,15 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
             List<CompletableFuture<String>> futuresStr = new ArrayList<>();
             List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
-            int boardSize = Math.min(limit, allSenders.size());
+
+            start -= 1;
+            int boardSize = Math.min(limit, allSenders.size() - start);
 
             LOGGER.debug("Board size: %s", boardSize);
 
-            for (int i = 0; i < boardSize; i++) {
+            for (int i = start; i < boardSize + (start); i++) {
                 Entry<Long, Integer> entry = allSenders.get(i);
-                int pos = i;
+                int pos = i - start;
 
                 val futureStr = new CompletableFuture<String>();
                 val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s,

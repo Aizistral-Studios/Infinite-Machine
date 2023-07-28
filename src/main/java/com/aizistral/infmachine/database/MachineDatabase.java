@@ -38,7 +38,7 @@ public interface MachineDatabase {
 
     public void resetIndexation();
 
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int limit);
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit);
 
     public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
 
