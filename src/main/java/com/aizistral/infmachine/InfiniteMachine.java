@@ -162,8 +162,13 @@ public class InfiniteMachine extends ListenerAdapter {
         } else if ("uptime".equals(event.getName())) {
             long uptime = System.currentTimeMillis() - this.startupTime;
 
-            event.reply(String.format(this.config.getMsgUptime(), TimeUnit.MILLISECONDS.toHours(uptime),
-                    TimeUnit.MILLISECONDS.toMinutes(uptime), TimeUnit.MILLISECONDS.toSeconds(uptime))).queue();
+            long hrs = TimeUnit.MILLISECONDS.toHours(uptime);
+            uptime -= hrs * 60L * 60L * 1000L;
+            long mins = TimeUnit.MILLISECONDS.toMinutes(uptime);
+            uptime -= mins * 60L * 1000L;
+            long secs = TimeUnit.MILLISECONDS.toSeconds(uptime);
+
+            event.reply(String.format(this.config.getMsgUptime(), hrs, mins, secs)).queue();
         } else if ("setindexmode".equals(event.getName())) {
             event.deferReply().queue();
 
