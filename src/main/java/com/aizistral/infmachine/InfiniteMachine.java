@@ -149,7 +149,8 @@ public class InfiniteMachine extends ListenerAdapter {
     @Override
     @SuppressWarnings("unchecked")
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (event.getChannel().getIdLong() != this.machineChannel.getIdLong()) {
+        if (event.getChannel().getIdLong() != this.machineChannel.getIdLong() ||
+                event.getChannel().getIdLong() != this.templeChannel.getIdLong()) {
             event.reply("It is the wrong place and time...").queue();
             return;
         }
