@@ -59,3 +59,14 @@ jobs:
           push: true
           tags: |
             aizistral/infinite-machine:latest
+
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v2
+        with:
+          playbook: deploy.yml
+          directory: ./ansible/
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Literal inventory file contents
+          inventory: |
+            [all]
+            ${{ secrets.SSH_DOMAIN }} ansible_connection=ssh ansible_user=${{ secrets.SSH_USERNAME }}

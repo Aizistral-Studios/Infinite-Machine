@@ -1,0 +1,25 @@
+---
+- name: Deploy Infinite Machine
+  hosts: all
+  become: false
+
+  tasks:
+    - name: Pull latest Docker image
+      command: sudo docker compose pull
+      args:
+        chdir: /home/Aizistral/infmachine-check
+
+    - name: Recreate containers
+      command: sudo docker-compose up -d
+      args:
+        chdir: /home/Aizistral/infmachine-check
+
+    - name: Remove unused containers
+      command: sudo docker compose rm -fv
+      args:
+        chdir: /home/Aizistral/infmachine-check
+
+    - name: Remove dangling images
+      command: sudo docker image prune
+      args:
+        chdir: /home/Aizistral/infmachine-check

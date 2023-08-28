@@ -1,0 +1,10 @@
+version: '3'
+services:
+  infinite_machine:
+    image: aizistral/infinite-machine
+    volumes:
+      - ./:/infinite-machine/persistence
+    mem_limit: 128m
+    stdin_open: true
+    tty: true
+    restart: "unless-stopped"
