@@ -14,6 +14,18 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@v3
+
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@v2
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v2
+
+      - name: "Login to DockerHub"
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         
       - name: validate gradle wrapper
         uses: gradle/wrapper-validation-action@v1
@@ -30,34 +42,18 @@ jobs:
         
       - name: build
         run: ./gradlew build
+        
       - name: capture build artifacts
-      
         if: ${{ runner.os == 'Linux' }} # upload artifacts from one OS
         uses: actions/upload-artifact@v2
         with:
           name: Artifacts
           path: build/libs/
 
-  deploy:
-    runs-on: ubuntu-20.04
-    needs: build
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    steps:
-      - name: "Set up QEMU"
-        uses: docker/setup-qemu-action@v2
-
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v2
-
-      - name: "Login to DockerHub"
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: "Build and push"
         id: docker_build
         uses: docker/build-push-action@v3
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         with:
           context: ./build/docker/
           platforms: "linux/amd64,linux/arm64"
@@ -67,6 +63,7 @@ jobs:
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         with:
           playbook: deploy.yml
           directory: ./ansible/
