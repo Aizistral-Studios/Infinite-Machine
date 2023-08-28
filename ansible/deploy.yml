@@ -10,7 +10,7 @@
         chdir: /home/Aizistral/infmachine-check
 
     - name: Recreate containers
-      command: sudo docker-compose up -d
+      command: sudo docker compose up -d
       args:
         chdir: /home/Aizistral/infmachine-check
 
