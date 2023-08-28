@@ -1,3 +1,5 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
 buildscript {
   repositories {
     maven {
@@ -7,6 +9,10 @@ buildscript {
   dependencies {
     classpath "io.freefair.gradle:lombok-plugin:5.3.3.3"
   }
+}
+
+plugins {
+    id 'com.bmuschko.docker-remote-api' version '3.2.3'
 }
 
 apply plugin: 'java'
@@ -64,3 +70,20 @@ fatJar.doFirst {
 artifacts {
     archives fatJar
 }
+
+task createDockerfile(type: Dockerfile) {
+    destFile = project.file('build/docker/Dockerfile')
+    from 'openjdk:8-jre-alpine'
+    maintainer 'Aizistral "admin@aizistral.com"'
+    copyFile fatJar.archiveName, '/infinite-machine/InfiniteMachine.jar'
+    defaultCommand 'java', '-jar', '/infinite-machine/InfiniteMachine.jar'
+}
+
+task syncWebAppArchive(type: Sync) {
+    dependsOn assemble
+    from fatJar.archivePath
+    into createDockerfile.destFile.parentFile
+}
+
+createDockerfile.dependsOn syncWebAppArchive
+fatJar.finalizedBy createDockerfile
