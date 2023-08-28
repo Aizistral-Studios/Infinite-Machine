@@ -49,9 +49,18 @@ jar {
 }
 
 task fatJar(type: Jar, dependsOn: 'jar') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
     inputs.file jar.archivePath
-    from(configurations.compile.collect { zipTree(it).matching { exclude 'META-INF/**' } })
-    classifier = 'all'
+    from(configurations.compile.collect { zipTree(it).matching { 
+		exclude "META-INF/**"
+	} })
+	
+	from("${projectDir}/services") {
+		into "META-INF/services"
+	}
+    
+	classifier = 'all'
 	baseName = archivesBaseName
 }
 
