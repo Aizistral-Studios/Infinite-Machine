@@ -20,6 +20,6 @@
         chdir: /home/Aizistral/infmachine-check
 
     - name: Remove dangling images
-      command: sudo docker image prune
+      command: sudo docker image prune -f
       args:
         chdir: /home/Aizistral/infmachine-check
