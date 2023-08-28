@@ -7,19 +7,19 @@
     - name: Pull latest Docker image
       command: sudo docker compose pull
       args:
-        chdir: /home/Aizistral/infmachine-check
+        chdir: /home/Aizistral/infmachine
 
     - name: Recreate containers
       command: sudo docker compose up -d
       args:
-        chdir: /home/Aizistral/infmachine-check
+        chdir: /home/Aizistral/infmachine
 
     - name: Remove unused containers
       command: sudo docker compose rm -fv
       args:
-        chdir: /home/Aizistral/infmachine-check
+        chdir: /home/Aizistral/infmachine
 
     - name: Remove dangling images
       command: sudo docker image prune -f
       args:
-        chdir: /home/Aizistral/infmachine-check
+        chdir: /home/Aizistral/infmachine
