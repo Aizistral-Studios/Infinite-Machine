@@ -85,7 +85,9 @@ task createDockerfile(type: Dockerfile) {
     from 'openjdk:8-jre-alpine'
     maintainer 'Aizistral "admin@aizistral.com"'
     copyFile fatJar.archiveName, '/infinite-machine/InfiniteMachine.jar'
-    defaultCommand 'java', '-jar', '/infinite-machine/InfiniteMachine.jar'
+    runCommand 'mkdir /infinite-machine/persistence'
+	workingDir("/infinite-machine/persistence")
+    defaultCommand 'java', '-jar', '../InfiniteMachine.jar'
 }
 
 task syncWebAppArchive(type: Sync) {
