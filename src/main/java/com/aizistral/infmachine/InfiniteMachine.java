@@ -66,6 +66,8 @@ public class InfiniteMachine extends ListenerAdapter {
         this.database = JSONDatabase.INSTANCE;
         this.startupTime = System.currentTimeMillis();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(this::trySave));
+
         // TODO Better localization
         this.jda.updateCommands().addCommands(
                 Commands.slash("ping", "Ping the machine accross time and space"),
