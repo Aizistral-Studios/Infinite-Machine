@@ -1,3 +1,6 @@
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 buildscript {
@@ -14,6 +17,11 @@ buildscript {
 plugins {
     id 'com.bmuschko.docker-remote-api' version '3.2.3'
 }
+
+def commit = 'git rev-parse HEAD'.execute().text.trim().substring(0, 7)
+println("HEAD: " + commit)
+
+version = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd-HH.mm.ss")) + "-" + commit
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
@@ -65,11 +73,14 @@ task fatJar(type: Jar, dependsOn: 'jar') {
 }
 
 tasks.withType(Jar) {
-	manifest {
-        attributes([
-            "Main-Class": "com.aizistral.infmachine.Main"
-        ])
-    }
+	doFirst {
+		manifest {
+			attributes([
+				"Main-Class": "com.aizistral.infmachine.Main",
+				"Implementation-Version": version
+			])
+		}
+	}
 }
 
 fatJar.doFirst {
