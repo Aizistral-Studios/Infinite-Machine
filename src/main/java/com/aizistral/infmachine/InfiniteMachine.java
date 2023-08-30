@@ -2,6 +2,7 @@ package com.aizistral.infmachine;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -135,7 +136,13 @@ public class InfiniteMachine extends ListenerAdapter {
             });
         });
 
-        //this.machineChannel.sendMessage("I am awake! <:the_cube:963161249028378735>").queue();
+        String version = this.getVersion();
+
+        if (!Objects.equals(this.database.getLastVersion(), version)) {
+            this.database.setLastVersion(version);
+            this.machineChannel.sendMessage(String.format("<:the_cube:963161249028378735> Version **%s** of"
+                    + " Infinite Machine was deployed successfully.", version)).queue();
+        }
     }
 
     @Override

@@ -42,6 +42,10 @@ public interface MachineDatabase {
 
     public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
 
+    public String getLastVersion();
+
+    public void setLastVersion(String version);
+
     public void forceSave();
 
 }

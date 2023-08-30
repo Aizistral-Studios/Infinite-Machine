@@ -282,6 +282,27 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
         }
     }
 
+    @Override
+    public String getLastVersion() {
+        try {
+            this.readLock.lock();
+            return this.getData().lastVersion;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    @Override
+    public void setLastVersion(String version) {
+        try {
+            this.writeLock.lock();
+            this.getData().lastVersion = version;
+            this.needsSaving.set(true);
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private final HashMap<Long, Integer> messageCounts = new HashMap<>();
@@ -289,6 +310,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
         private final HashMap<Long, List<Long>> channelIndexTails = new HashMap<>();
         private final HashMap<Long, List<Long>> threadIndexTails = new HashMap<>();
         private final HashSet<Voting> votings = new HashSet<>();
+        private String lastVersion = "";
     }
 
 }
