@@ -73,6 +73,8 @@ public class InfiniteMachine extends ListenerAdapter {
                 Commands.slash("ping", "Ping the machine accross time and space"),
                 Commands.slash("version", "Display current version of the machine"),
                 Commands.slash("uptime", "Display how long the machine have been awake for"),
+                Commands.slash("pet", "Pet the specified creature")
+                .addOption(OptionType.USER, "user", "The creature to pet", false),
                 Commands.slash("setindexmode", "Change current message indexing mode")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
                 .addOption(OptionType.STRING, "mode",
@@ -252,6 +254,11 @@ public class InfiniteMachine extends ListenerAdapter {
             });
         } else if ("version".equals(event.getName())) {
             event.reply(String.format("The machine's version is: **%s**", this.getVersion())).queue();
+        } else if ("pet".equals(event.getName())) {
+            OptionMapping mapping = event.getOption("user");
+            long id = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
+
+            event.reply(String.format("<@%s> has been pet.", id)).queue();
         }
     }
 
