@@ -265,7 +265,13 @@ public class InfiniteMachine extends ListenerAdapter {
             OptionMapping mapping = event.getOption("user");
             long id = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
 
-            event.reply(String.format("<@%s> has been pet.", id)).queue();
+            String msg = "<@%s> has been pet.";
+
+            if (id == 1124053065109098708L) { // bot's own ID
+                msg = "At the end of times, the <@%s> has pet itself.";
+            }
+
+            event.reply(String.format(msg, id)).queue();
         }
     }
 
