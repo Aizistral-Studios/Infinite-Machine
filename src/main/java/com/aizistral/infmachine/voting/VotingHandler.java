@@ -101,7 +101,7 @@ public class VotingHandler extends ListenerAdapter {
     }
 
     private String getName(User user) {
-        return String.format("<@%s>", user.getId());
+        return String.format("**%s (<@%s>)**", user.getEffectiveName(), user.getId());
     }
 
     public boolean hasVoting(User user) {
