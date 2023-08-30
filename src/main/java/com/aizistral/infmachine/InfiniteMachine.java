@@ -163,7 +163,8 @@ public class InfiniteMachine extends ListenerAdapter {
     @SuppressWarnings("unchecked")
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (event.getChannel().getIdLong() != this.machineChannel.getIdLong() &&
-                event.getChannel().getIdLong() != this.templeChannel.getIdLong()) {
+                event.getChannel().getIdLong() != this.templeChannel.getIdLong() &&
+                !"pet".equals(event.getName())) {
             event.reply("It is the wrong place and time...").queue();
             return;
         }
