@@ -71,6 +71,7 @@ public class InfiniteMachine extends ListenerAdapter {
         // TODO Better localization
         this.jda.updateCommands().addCommands(
                 Commands.slash("ping", "Ping the machine accross time and space"),
+                Commands.slash("version", "Display current version of the machine"),
                 Commands.slash("uptime", "Display how long the machine have been awake for"),
                 Commands.slash("setindexmode", "Change current message indexing mode")
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
@@ -249,11 +250,18 @@ public class InfiniteMachine extends ListenerAdapter {
                     .queue();
                 }
             });
+        } else if ("version".equals(event.getName())) {
+            event.reply(String.format("The machine's version is: **%s**", this.getVersion())).queue();
         }
     }
 
     public JDA getJDA() {
         return this.jda;
+    }
+
+    public String getVersion() {
+        String version = Main.class.getPackage().getImplementationVersion();
+        return version != null ? version : "UNKNOWN";
     }
 
     public void setIndexationMode(IndexationMode mode) {
