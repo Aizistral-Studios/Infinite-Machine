@@ -268,7 +268,12 @@ public class InfiniteMachine extends ListenerAdapter {
 
             String msg = "<@%s> has been pet.";
 
-            if (id == 1124053065109098708L) { // bot's own ID
+            if (id == 440381346339094539L) {
+                msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+                        + "No matter what machines you wield...";
+                event.reply(msg).queue();
+                return;
+            } else if (id == 1124053065109098708L) { // bot's own ID
                 msg = "At the end of times, the <@%s> has pet itself.";
             }
 
