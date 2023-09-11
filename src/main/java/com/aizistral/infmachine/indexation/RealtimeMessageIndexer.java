@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
+import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
@@ -83,7 +84,8 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
                 // TODO Remove temporary safeguards when VotingHandler handles async better
                 if (this.database.getVotingCount(user.getIdLong()) <= 0) {
                     if (this.database.addVotingCount(user.getIdLong(), 1) == 1) {
-                        InfiniteMachine.INSTANCE.getVotingHandler().openVoting(user, count, false);
+                        InfiniteMachine.INSTANCE.getVotingHandler().openVoting(user, count, false,
+                                Voting.Type.GRANT_ROLE);
                     } else {
                         this.database.addVotingCount(user.getIdLong(), -1);
                     }

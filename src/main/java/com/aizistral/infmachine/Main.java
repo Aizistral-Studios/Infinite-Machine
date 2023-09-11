@@ -3,6 +3,7 @@ package com.aizistral.infmachine;
 import java.io.IOException;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
+import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.database.local.JSONDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 
@@ -22,6 +23,7 @@ public final class Main {
             InfiniteConfig.INSTANCE.init();
             InfiniteConfig.INSTANCE.forceSave();
             JSONDatabase.INSTANCE.init();
+            Localization.load();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -38,7 +40,7 @@ public final class Main {
                 GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS
                 );
 
-        builder.setActivity(Activity.watching("the stars"));
+        builder.setActivity(Activity.watching(Localization.translate("activity.watching")));
 
         JDA = builder.build();
     }
