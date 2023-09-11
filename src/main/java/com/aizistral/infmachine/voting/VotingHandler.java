@@ -276,11 +276,28 @@ public class VotingHandler extends ListenerAdapter {
 	    if (event.getChannel().getIdLong() != this.votingChannel.getIdLong())
 		return;
 
+	    long msgID = event.getMessageIdLong();
+	    EmojiUnion emoji = event.getReaction().getEmoji();
+
+	    if (emoji.getType() == Type.CUSTOM) {
+		long emojiID = emoji.asCustom().getIdLong();
+
+		if (emojiID == this.upvote.getIdLong() || emojiID == this.downvote.getIdLong()) {
+		    long userID = event.getUserIdLong();
+
+		    this.database.getVotings().stream().filter(v -> v.getMessageID() == msgID).findAny()
+		    .ifPresent(voting -> {
+			if (voting.getCandidateID() == userID && voting.getType() == Voting.Type.REVOKE_ROLE) {
+			    event.getReaction().removeReaction(event.getUser()).queue();
+			}
+		    });
+		}
+	    }
+
 	    if (event.getUserIdLong() != this.config.getArchitectID())
 		return;
 
 	    AtomicBoolean approve = new AtomicBoolean(false);
-	    EmojiUnion emoji = event.getReaction().getEmoji();
 
 	    if (emoji.getType() == Type.CUSTOM) {
 		if (emoji.asCustom().getIdLong() == this.crossmark.getIdLong()) {
@@ -294,7 +311,6 @@ public class VotingHandler extends ListenerAdapter {
 		    return;
 	    }
 
-	    long msgID = event.getMessageIdLong();
 
 	    this.database.getVotings().stream().filter(v -> v.getMessageID() == msgID).findAny()
 	    .ifPresent(voting -> {
