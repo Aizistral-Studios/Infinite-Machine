@@ -28,9 +28,11 @@ public class ExhaustiveMessageIndexer {
     private final AtomicBoolean halt, active;
     private final MachineDatabase database;
     private final Guild guild;
+    private final int minMessageLength;
     private Thread thread;
 
-    public ExhaustiveMessageIndexer(Guild guild, MachineDatabase database) {
+    public ExhaustiveMessageIndexer(Guild guild, MachineDatabase database, int minMessageLength) {
+        this.minMessageLength = minMessageLength;
         this.convergenceHandlers = new ArrayList<>();
         this.guild = guild;
         this.database = database;
@@ -156,8 +158,10 @@ public class ExhaustiveMessageIndexer {
                         }
 
                         if (!author.isSystem() && !author.isBot()) {
-                            if (author.getIdLong() != Utils.DELETED_USER_ID) { //TODO Add check for message length if below threshold continue
-                                this.database.addMessageCount(author.getIdLong(), 1);
+                            if (author.getIdLong() != Utils.DELETED_USER_ID) {
+                                if(!(message.getContentRaw().length() >= minMessageLength)){
+                                    this.database.addMessageCount(author.getIdLong(), 1);
+                                }
                             }
                         }
 

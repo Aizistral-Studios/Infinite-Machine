@@ -23,7 +23,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -45,6 +44,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private final JDA jda;
+	private final int minMessageLength;
     private final Guild domain;
     private final Role believersRole;
     private final Role beholdersRole;
@@ -65,7 +65,7 @@ public class InfiniteMachine extends ListenerAdapter {
     @SneakyThrows
     private InfiniteMachine(JDA jda) {
 	this.jda = jda;
-	this.config = InfiniteConfig.INSTANCE;
+		this.config = InfiniteConfig.INSTANCE;
 	this.database = JSONDatabase.INSTANCE;
 	this.startupTime = System.currentTimeMillis();
 
@@ -103,6 +103,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	this.jda.awaitReady();
 
+	this.minMessageLength = (int) this.config.getMinMessageLength();
 	this.domain = jda.getGuildById(this.config.getDomainID());
 
 	if (this.domain == null) {
@@ -319,7 +320,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    if (mode == IndexationMode.EXHAUSTIVE) {
 		if (this.exhaustiveIndexer == null || !this.exhaustiveIndexer.isActive()) {
-		    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase());
+		    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
 		    this.exhaustiveIndexer.onConvergence(() -> {
 			this.machineChannel.sendMessage("Achieved convergence in exhaustive indexation mode, "
 				+ "switching to real-time...").queue();

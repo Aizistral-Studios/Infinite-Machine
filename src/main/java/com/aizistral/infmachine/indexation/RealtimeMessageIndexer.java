@@ -65,7 +65,9 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             // TODO Add check for minimum message length
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    this.onNewMessage(user, event.getMessage());
+                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()){
+                        this.onNewMessage(user, event.getMessage());
+                    }
                 }
             }
         }
@@ -73,8 +75,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        // TODO Change required messages
-        if (count >= 300) {
+        if (count >= config.getRequiredMessagesForBeliever()) {
             this.guild.retrieveMember(user).queue(member -> {
                 for (Role role : member.getRoles()) {
                     if (this.unvotableRoles.contains(role))
