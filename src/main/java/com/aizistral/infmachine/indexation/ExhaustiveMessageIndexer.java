@@ -65,7 +65,7 @@ public class ExhaustiveMessageIndexer {
 
             if (iteration < 1) {
                 // Only get archived threads in first iteration, since if they remain archived -
-                // that likesly means that no new messages were added to them
+                // that likely means that no new messages were added to them
                 for (TextChannel channel : textChannels) {
                     threads.addAll(this.extractAll(channel.retrieveArchivedPublicThreadChannels()));
                     threads.addAll(this.extractAll(channel.retrieveArchivedPrivateThreadChannels()));
@@ -156,7 +156,7 @@ public class ExhaustiveMessageIndexer {
                         }
 
                         if (!author.isSystem() && !author.isBot()) {
-                            if (author.getIdLong() != Utils.DELETED_USER_ID) {
+                            if (author.getIdLong() != Utils.DELETED_USER_ID) { //TODO Add check for message length if below threshold continue
                                 this.database.addMessageCount(author.getIdLong(), 1);
                             }
                         }
