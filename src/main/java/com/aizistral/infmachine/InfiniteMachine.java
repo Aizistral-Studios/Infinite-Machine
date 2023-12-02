@@ -281,8 +281,14 @@ public class InfiniteMachine extends ListenerAdapter {
 	    String msg = "<@%s> has been pet.";
 
 	    if (id == 440381346339094539L) {
-		msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
-			+ "No matter what machines you wield...";
+			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+			if(267067816627273730L == event.getMember().getUser().getIdLong()){
+				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+			}else{
+				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+						+ "No matter what machines you wield...";
+			}
+
 		event.reply(msg).queue();
 		return;
 	    } else if (id == 1124053065109098708L) { // bot's own ID
