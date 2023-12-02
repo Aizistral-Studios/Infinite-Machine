@@ -62,10 +62,9 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             if (event.getMessage().getInteraction() != null) {
                 user = event.getMessage().getInteraction().getUser();
             }
-            // TODO Add check for minimum message length
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()){
+                    if(event.getMessage().getContentDisplay().length() >= config.getMinMessageLength()){
                         this.onNewMessage(user, event.getMessage());
                     }
                 }
