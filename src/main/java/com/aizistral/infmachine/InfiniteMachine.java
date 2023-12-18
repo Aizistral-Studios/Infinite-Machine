@@ -65,7 +65,7 @@ public class InfiniteMachine extends ListenerAdapter {
     @SneakyThrows
     private InfiniteMachine(JDA jda) {
 	this.jda = jda;
-		this.config = InfiniteConfig.INSTANCE;
+	this.config = InfiniteConfig.INSTANCE;
 	this.database = JSONDatabase.INSTANCE;
 	this.startupTime = System.currentTimeMillis();
 
