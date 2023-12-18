@@ -44,7 +44,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private final JDA jda;
-	private final int minMessageLength;
+    private final int minMessageLength;
     private final Guild domain;
     private final Role believersRole;
     private final Role beholdersRole;
