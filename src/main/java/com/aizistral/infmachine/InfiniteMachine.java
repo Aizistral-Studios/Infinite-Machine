@@ -44,7 +44,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private final JDA jda;
-	private final int minMessageLength;
+    private final int minMessageLength;
     private final Guild domain;
     private final Role believersRole;
     private final Role beholdersRole;
@@ -282,7 +282,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    if (id == 440381346339094539L) {
 			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
-			if(267067816627273730L == event.getMember().getUser().getIdLong()){
+			if(event.getUser().getIdLong() == 267067816627273730L){
 				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
 			}else{
 				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
