@@ -53,6 +53,24 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
+    public long getMinMessageLength() {
+        try {
+            this.readLock.lock();
+            return this.getData().minMessageLength;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    public long getRequiredMessagesForBeliever() {
+        try {
+            this.readLock.lock();
+            return this.getData().requiredMessagesForBeliever;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
     public long getDomainID() {
         try {
             this.readLock.lock();
@@ -185,6 +203,8 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         private IndexationMode startupIndexationMode = IndexationMode.DISABLED;
         private long votingCheckDelay = 60_000L;
         private long votingTime = 60_000L;
+        private long minMessageLength = 0;
+        private long requiredMessagesForBeliever = 300;
         private long domainID = 757941072449241128L;
         private long templeChannelID = 953374742457499659L;
         private long machineChannelID = 1124278424698105940L;

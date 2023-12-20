@@ -28,9 +28,11 @@ public class ExhaustiveMessageIndexer {
     private final AtomicBoolean halt, active;
     private final MachineDatabase database;
     private final Guild guild;
+    private final int minMessageLength;
     private Thread thread;
 
-    public ExhaustiveMessageIndexer(Guild guild, MachineDatabase database) {
+    public ExhaustiveMessageIndexer(Guild guild, MachineDatabase database, int minMessageLength) {
+        this.minMessageLength = minMessageLength;
         this.convergenceHandlers = new ArrayList<>();
         this.guild = guild;
         this.database = database;
@@ -65,7 +67,7 @@ public class ExhaustiveMessageIndexer {
 
             if (iteration < 1) {
                 // Only get archived threads in first iteration, since if they remain archived -
-                // that likesly means that no new messages were added to them
+                // that likely means that no new messages were added to them
                 for (TextChannel channel : textChannels) {
                     threads.addAll(this.extractAll(channel.retrieveArchivedPublicThreadChannels()));
                     threads.addAll(this.extractAll(channel.retrieveArchivedPrivateThreadChannels()));
@@ -157,7 +159,9 @@ public class ExhaustiveMessageIndexer {
 
                         if (!author.isSystem() && !author.isBot()) {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
-                                this.database.addMessageCount(author.getIdLong(), 1);
+                                if(message.getContentRaw().length() >= minMessageLength){
+                                    this.database.addMessageCount(author.getIdLong(), 1);
+                                }
                             }
                         }
 

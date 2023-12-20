@@ -23,7 +23,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -45,6 +44,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private final JDA jda;
+    private final int minMessageLength;
     private final Guild domain;
     private final Role believersRole;
     private final Role beholdersRole;
@@ -103,6 +103,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	this.jda.awaitReady();
 
+	this.minMessageLength = (int) this.config.getMinMessageLength();
 	this.domain = jda.getGuildById(this.config.getDomainID());
 
 	if (this.domain == null) {
@@ -280,8 +281,14 @@ public class InfiniteMachine extends ListenerAdapter {
 	    String msg = "<@%s> has been pet.";
 
 	    if (id == 440381346339094539L) {
-		msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
-			+ "No matter what machines you wield...";
+			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+			if(event.getUser().getIdLong() == 267067816627273730L){
+				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+			}else{
+				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+						+ "No matter what machines you wield...";
+			}
+
 		event.reply(msg).queue();
 		return;
 	    } else if (id == 1124053065109098708L) { // bot's own ID
@@ -319,7 +326,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    if (mode == IndexationMode.EXHAUSTIVE) {
 		if (this.exhaustiveIndexer == null || !this.exhaustiveIndexer.isActive()) {
-		    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase());
+		    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
 		    this.exhaustiveIndexer.onConvergence(() -> {
 			this.machineChannel.sendMessage("Achieved convergence in exhaustive indexation mode, "
 				+ "switching to real-time...").queue();
