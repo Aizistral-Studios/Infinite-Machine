@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.IndexationMode;
+import com.aizistral.infmachine.data.LeaderboardType;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.database.local.JSONDatabase;
@@ -88,6 +89,9 @@ public class InfiniteMachine extends ListenerAdapter {
 		Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
 		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
+		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
+			Arrays.stream(LeaderboardType.values()).map(LeaderboardType::toString)
+			.collect(Collectors.joining("/"))), true)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
@@ -209,24 +213,59 @@ public class InfiniteMachine extends ListenerAdapter {
 		    (a, b) -> this.shutdown());
 	} else if ("leaderboard".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
-		val option = event.getOption("start");
-		int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+	    String typeName = event.getOption("type").getAsString();
+	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
+		//Initializing type with default value
+		LeaderboardType type = LeaderboardType.RATING;
+		if(typeVal.isPresent()) type = typeVal.get();
+		if(type == LeaderboardType.MESSAGES){
+			val option = event.getOption("start");
+			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
-		val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, start, 10);
-		String reply = "";
+			val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
+			String reply = "";
 
-		if (start == 1) {
-		    reply += Localization.translate("msg.leaderboardHeader") + "\n";
-		} else {
-		    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
-		}
+			if (start == 1)
+			{
+				reply += Localization.translate("msg.leaderboardHeader") + "\n";
+			}
+			else
+			{
+				reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+			}
 
-		for (int i = 0; i < senders.size(); i++) {
-		    val triple = senders.get(i);
-		    reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
-			    triple.getA(), triple.getC());
-		}
+			for (int i = 0; i < senders.size(); i++)
+			{
+				val triple = senders.get(i);
+				reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
+						triple.getA(), triple.getC());
+			}
+			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+		}else if(type == LeaderboardType.RATING){
+		    val option = event.getOption("start");
+		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
+		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
+		    String reply = "";
+
+		    if (start == 1)
+		    {
+			    reply += Localization.translate("msg.leaderboardHeader") + "\n";
+		    }
+		    else
+		    {
+			    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+		    }
+
+		    for (int i = 0; i < senders.size(); i++)
+		    {
+			    val triple = senders.get(i);
+			    reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
+					    triple.getA(), triple.getC());
+		    }
+		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+	    }
+		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
 	} else if ("rating".equals(event.getName())) {
@@ -280,6 +319,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    String msg = "<@%s> has been pet.";
 
+		//TODO add more funny interactions
 	    if (id == 440381346339094539L) {
 			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
 			if(event.getUser().getIdLong() == 267067816627273730L){

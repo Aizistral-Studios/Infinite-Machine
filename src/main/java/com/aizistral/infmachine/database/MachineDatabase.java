@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.aizistral.infmachine.data.ChannelType;
 import com.aizistral.infmachine.data.IndexationMode;
+import com.aizistral.infmachine.data.LeaderboardType;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.utils.Triple;
 import com.aizistral.infmachine.utils.Tuple;
@@ -44,7 +45,7 @@ public interface MachineDatabase {
 
     public void resetIndexation();
 
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit);
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit);
 
     public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
 

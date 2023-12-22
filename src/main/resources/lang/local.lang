@@ -10,6 +10,7 @@ cmd.setindexmode.mode=Indexing mode: %s
 cmd.getindexmode.desc=View current message indexing mode
 cmd.terminate.desc=Halt and catch fire
 cmd.leaderboard.desc=Show top-10 people in the server by message count
+cmd.leaderboard.type=Leaderboard Type: %s
 cmd.leaderboard.start=Start listing people from this position
 cmd.rating.desc=Show user's position in leaderboard by message count
 cmd.rating.user=User to show the position of

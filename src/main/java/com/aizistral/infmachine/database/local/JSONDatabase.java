@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+import com.aizistral.infmachine.data.LeaderboardType;
 import org.jetbrains.annotations.Nullable;
 
 import com.aizistral.infmachine.config.AsyncJSONConfig;
@@ -221,6 +222,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             this.getData().channelIndexTails.clear();
             this.getData().threadIndexTails.clear();
             this.getData().messageCounts.clear();
+            this.getData().messageRating.clear();
             this.needsSaving.set(true);
         } finally {
             this.writeLock.unlock();
@@ -246,16 +248,24 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit) {
+    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
-            List<Entry<Long, Integer>> allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
-            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
-            allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
+            List<Entry<Long, Integer>> allSenders = new ArrayList<>();
 
+            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
             List<CompletableFuture<String>> futuresStr = new ArrayList<>();
             List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
+            switch (type){
+                case MESSAGES:
+                    allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
+                    break;
+                case RATING:
+                    allSenders = new ArrayList<>(this.getData().messageRating.entrySet());
+                    break;
+            }
+            allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
 
             start -= 1;
             int boardSize = Math.min(limit, allSenders.size() - start);
