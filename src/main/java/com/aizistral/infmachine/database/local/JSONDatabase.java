@@ -133,6 +133,43 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
+    public int getMessageRating(long userID)
+    {
+        try {
+            this.readLock.lock();
+            return this.getData().messageRating.getOrDefault(userID, 0);
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    @Override
+    public int setMessageRating(long userID, int score)
+    {
+        try {
+            this.writeLock.lock();
+            this.getData().messageRating.put(userID, score);
+            this.needsSaving.set(true);
+            return score;
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
+    public int addMessageRating(long userID, int score)
+    {
+        try {
+            this.writeLock.lock();
+            int newScore = this.getMessageRating(userID) + score;
+            this.setMessageRating(userID, newScore);
+            return newScore;
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
     public boolean hasIndexedMessages(ChannelType type, long channelID) {
         return this.getIndexedMessage(type, channelID, 0) >= 0;
     }
@@ -306,6 +343,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private final HashMap<Long, Integer> messageCounts = new HashMap<>();
+        private final HashMap<Long, Integer> messageRating = new HashMap<>();
         private final HashMap<Long, Integer> votingCounts = new HashMap<>();
         private final HashMap<Long, List<Long>> channelIndexTails = new HashMap<>();
         private final HashMap<Long, List<Long>> threadIndexTails = new HashMap<>();

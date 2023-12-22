@@ -74,7 +74,9 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        if (count >= config.getRequiredMessagesForBeliever()) {
+        int score = this.database.addMessageRating(user.getIdLong(), 1);
+        //TODO Apply evaluation function to scoring
+        if (score >= config.getRequiredMessagesForBeliever()) {
             this.guild.retrieveMember(user).queue(member -> {
                 for (Role role : member.getRoles()) {
                     if (this.unvotableRoles.contains(role))

@@ -30,6 +30,12 @@ public interface MachineDatabase {
 
     public int addMessageCount(long userID, int count);
 
+    public int getMessageRating(long userID);
+
+    public int setMessageRating(long userID, int count);
+
+    public int addMessageRating(long userID, int count);
+
     public boolean hasIndexedMessages(ChannelType type, long channelID);
 
     public void addIndexedMessage(ChannelType type, long channelID, long messageID);

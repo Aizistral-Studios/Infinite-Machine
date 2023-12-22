@@ -160,7 +160,9 @@ public class ExhaustiveMessageIndexer {
                         if (!author.isSystem() && !author.isBot()) {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
                                 if(message.getContentRaw().length() >= minMessageLength){
+                                    //TODO Implement an evaluation function and add it as count in rating
                                     this.database.addMessageCount(author.getIdLong(), 1);
+                                    this.database.addMessageRating(author.getIdLong(), 1);
                                 }
                             }
                         }
