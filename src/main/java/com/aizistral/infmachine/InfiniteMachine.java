@@ -10,6 +10,7 @@ import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.IndexationMode;
 import com.aizistral.infmachine.data.LeaderboardType;
+import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.database.local.JSONDatabase;
@@ -23,9 +24,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -413,5 +412,21 @@ public class InfiniteMachine extends ListenerAdapter {
 	    LOGGER.error("Failed to save database! Stacktrace:", ex);
 	}
     }
+
+	//TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
+	public static int evaluateMessage(Message messageRaw) {
+		//lengthSegmentSize describes the size of each individual message segment
+		int lengthSegmentSize = 50;
+
+		//linkLengthValueInChars describes the flat amount of chars that a Link will contribute to a message Rating
+		int linkLengthValueInChars = lengthSegmentSize / 2;
+
+		ProcessedMessage message = new ProcessedMessage(messageRaw);
+		int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
+		int emojiContributionToLength = message.getEmojiCount();
+		int segments = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength) / lengthSegmentSize;
+		return (segments * (segments + 1)) / 2 + 1;
+
+	}
 
 }
