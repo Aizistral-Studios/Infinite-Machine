@@ -11,10 +11,7 @@ import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -64,8 +61,10 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             }
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()){
-                        this.onNewMessage(user, event.getMessage());
+                    if (!event.getMessage().getType().equals(MessageType.SLASH_COMMAND)) {
+                        if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()) {
+                            this.onNewMessage(user, event.getMessage());
+                        }
                     }
                 }
             }
@@ -74,8 +73,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        int score = this.database.addMessageRating(user.getIdLong(), 1);
-        //TODO Apply evaluation function to scoring
+        int score = this.database.addMessageRating(user.getIdLong(), InfiniteMachine.evaluateMessage(message));
         if (score >= config.getRequiredMessagesForBeliever()) {
             this.guild.retrieveMember(user).queue(member -> {
                 for (Role role : member.getRoles()) {

@@ -10,10 +10,7 @@ import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageHistory;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
@@ -159,11 +156,13 @@ public class ExhaustiveMessageIndexer {
 
                         if (!author.isSystem() && !author.isBot()) {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
-                                if(message.getContentRaw().length() >= minMessageLength){
-                                    //TODO Implement an evaluation function and add it as count in rating
-                                    this.database.addMessageCount(author.getIdLong(), 1);
-                                    this.database.addMessageRating(author.getIdLong(), 1);
+                                if (!message.getType().equals(MessageType.SLASH_COMMAND)) {
+                                    if(message.getContentRaw().length() >= minMessageLength) {
+                                        this.database.addMessageCount(author.getIdLong(), 1);
+                                        this.database.addMessageRating(author.getIdLong(), InfiniteMachine.evaluateMessage(message));
+                                    }
                                 }
+
                             }
                         }
 
