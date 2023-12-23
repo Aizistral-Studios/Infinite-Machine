@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import com.aizistral.infmachine.data.LeaderboardType;
+import com.aizistral.infmachine.utils.Truple;
 import org.jetbrains.annotations.Nullable;
 
 import com.aizistral.infmachine.config.AsyncJSONConfig;
@@ -248,24 +249,33 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
+    public List<Truple<Long, String, Integer, Integer>> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
-            List<Entry<Long, Integer>> allSenders = new ArrayList<>();
 
-            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
+            List<Truple<Long, String, Integer, Integer>> topSenders = new ArrayList<>();
             List<CompletableFuture<String>> futuresStr = new ArrayList<>();
             List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
-            switch (type){
-                case MESSAGES:
-                    allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
-                    break;
-                case RATING:
-                    allSenders = new ArrayList<>(this.getData().messageRating.entrySet());
-                    break;
+
+            List<Entry<Long, Integer>> allSendersMessages = new ArrayList<>(this.getData().messageCounts.entrySet());
+            List<Entry<Long, Integer>> allSendersRating = new ArrayList<>(this.getData().messageRating.entrySet());
+            allSendersMessages.sort(Entry.comparingByKey(Comparator.reverseOrder()));
+            allSendersRating.sort(Entry.comparingByKey(Comparator.reverseOrder()));
+
+            List<Triple<Long, Integer, Integer>> allSenders = new ArrayList<>();
+            for (int i = 0; i < allSendersMessages.size(); i++) {
+                Entry<Long, Integer> m = allSendersMessages.get(i);
+                Entry<Long, Integer> r = allSendersRating.get(i);
+                Long userIDM = m.getKey();
+                Integer messageCount = m.getValue();
+                Long userIDR = r.getKey();
+                Integer rating = r.getValue();
+                if(!userIDM.equals(userIDR)) {
+                    LOGGER.error("ERROR: INVALID USER IDs in getTopMessageSenders");
+                }
+                allSenders.add(new Triple<>(userIDM, messageCount, rating));
             }
-            allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
 
             start -= 1;
             int boardSize = Math.min(limit, allSenders.size() - start);
@@ -273,20 +283,19 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             LOGGER.debug("Board size: %s", boardSize);
 
             for (int i = start; i < boardSize + (start); i++) {
-                Entry<Long, Integer> entry = allSenders.get(i);
+                Triple<Long, Integer, Integer> entry = allSenders.get(i);
                 int pos = i - start;
 
                 val futureStr = new CompletableFuture<String>();
-                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s,
-                        entry.getValue())));
+                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Truple<>(entry.getA(), s, entry.getB(), entry.getC())));
 
                 futuresStr.add(futureStr);
                 futuresVoid.add(futureVoid);
 
-                guild.retrieveMemberById(entry.getKey()).queue(member -> {
+                guild.retrieveMemberById(entry.getA()).queue(member -> {
                     futuresStr.get(pos).complete(member.getEffectiveName());
                 }, ex -> {
-                    jda.retrieveUserById(entry.getKey()).queue(user -> {
+                    jda.retrieveUserById(entry.getA()).queue(user -> {
                         futuresStr.get(pos).complete(user.getEffectiveName());
                     }, ex2 -> {
                         futuresStr.get(pos).complete("Unknown");
@@ -300,9 +309,21 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             futuresVoid.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
-            topSenders.sort((a, b) -> {
-                return b.getC() - a.getC();
-            });
+            switch (type)
+            {
+                case MESSAGES:
+                    topSenders.sort((a, b) ->
+                    {
+                        return b.getC() - a.getC();
+                    });
+                    break;
+                case RATING:
+                    topSenders.sort((a, b) ->
+                    {
+                        return b.getD() - a.getD();
+                    });
+                    break;
+            }
 
             return topSenders;
         } finally {

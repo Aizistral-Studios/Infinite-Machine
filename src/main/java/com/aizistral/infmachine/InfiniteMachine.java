@@ -90,7 +90,7 @@ public class InfiniteMachine extends ListenerAdapter {
 		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
 		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
 			Arrays.stream(LeaderboardType.values()).map(LeaderboardType::toString)
-			.collect(Collectors.joining("/"))), true)
+			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
@@ -212,7 +212,8 @@ public class InfiniteMachine extends ListenerAdapter {
 		    (a, b) -> this.shutdown());
 	} else if ("leaderboard".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
-	    String typeName = event.getOption("type").getAsString();
+	    OptionMapping typeMapping = event.getOption("type");
+	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
 	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
 		//Initializing type with default value
 		LeaderboardType type = LeaderboardType.RATING;
@@ -235,9 +236,8 @@ public class InfiniteMachine extends ListenerAdapter {
 
 			for (int i = 0; i < senders.size(); i++)
 			{
-				val triple = senders.get(i);
-				reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
-						triple.getA(), triple.getC());
+				val truple = senders.get(i);
+				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, truple.getB(), truple.getA(), truple.getC(), truple.getD());
 			}
 			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 		}else if(type == LeaderboardType.RATING){
@@ -258,9 +258,8 @@ public class InfiniteMachine extends ListenerAdapter {
 
 		    for (int i = 0; i < senders.size(); i++)
 		    {
-			    val triple = senders.get(i);
-			    reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
-					    triple.getA(), triple.getC());
+			    val truple = senders.get(i);
+			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, truple.getB(), truple.getA(), truple.getD(), truple.getC());
 		    }
 		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }
