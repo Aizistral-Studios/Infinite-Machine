@@ -73,8 +73,25 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        int score = this.database.addMessageRating(user.getIdLong(), InfiniteMachine.evaluateMessage(message));
-        if (score >= config.getRequiredMessagesForBeliever()) {
+        int rating = this.database.addMessageRating(user.getIdLong(), InfiniteMachine.evaluateMessage(message));
+        long requiredMessages = 0;
+        long requiredRating = 0;
+
+        switch (config.getBelieverMethod())
+        {
+            case MESSAGES:
+                requiredMessages = config.getRequiredMessagesForBeliever();
+                break;
+            case RATING:
+                requiredRating = config.getRequiredRatingForBeliever();
+                break;
+            case MESSAGES_AND_RATING:
+                requiredMessages = config.getRequiredMessagesForBeliever();
+                requiredRating = config.getRequiredRatingForBeliever();
+                break;
+        }
+
+        if (count >= requiredMessages && rating >= requiredRating) {
             this.guild.retrieveMember(user).queue(member -> {
                 for (Role role : member.getRoles()) {
                     if (this.unvotableRoles.contains(role))
