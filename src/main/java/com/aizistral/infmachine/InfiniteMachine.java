@@ -230,8 +230,8 @@ public class InfiniteMachine extends ListenerAdapter {
 			val option = event.getOption("start");
 			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
-			val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
-			String reply = "";
+		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
+		    String reply = "";
 
 			if (start == 1) {
 				reply += Localization.translate("msg.leaderboardHeader") + "\n";
@@ -262,6 +262,7 @@ public class InfiniteMachine extends ListenerAdapter {
 			    val leaderboardEntry = senders.get(i);
 			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
 		    }
+
 		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }
 
@@ -341,15 +342,15 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    String msg = "<@%s> has been pet.";
 
-		//TODO add more funny interactions
+	    //TODO add more funny interactions
 	    if (id == 440381346339094539L) {
-			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
-			if(event.getUser().getIdLong() == 267067816627273730L){
-				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
-			}else{
-				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
-						+ "No matter what machines you wield...";
-			}
+		// Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+                if (event.getUser().getIdLong() == 267067816627273730L) {
+                    msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+                } else {
+                    msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+                            + "No matter what machines you wield...";
+                }
 
 		event.reply(msg).queue();
 		return;
@@ -436,10 +437,11 @@ public class InfiniteMachine extends ListenerAdapter {
 	}
     }
 
-	//TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
-	public static int evaluateMessage(Message messageRaw) {
-		//Exclude slash commands from rating
-		if(messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
+    // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
+    public static int evaluateMessage(Message messageRaw) {
+	// Exclude slash commands from rating
+	if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
+	    return 0;
 
 		//linkLengthValueInChars describes the flat amount of chars that a Link will contribute to a message Rating
 		int linkLengthValueInChars = 25;
@@ -450,6 +452,6 @@ public class InfiniteMachine extends ListenerAdapter {
 		int length = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength);
 		return length * length / 5000 + 1;
 
-	}
+    }
 
 }

@@ -61,7 +61,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             }
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()) {
+                    if (event.getMessage().getContentRaw().length() >= this.config.getMinMessageLength()) {
                         this.onNewMessage(user, event.getMessage());
                     }
                 }
@@ -75,16 +75,16 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
         long requiredMessages = 0;
         long requiredRating = 0;
 
-        switch (config.getBelieverMethod()) {
+        switch (this.config.getBelieverMethod()) {
             case MESSAGES:
-                requiredMessages = config.getRequiredMessagesForBeliever();
+                requiredMessages = this.config.getRequiredMessagesForBeliever();
                 break;
             case RATING:
-                requiredRating = config.getRequiredRatingForBeliever();
+                requiredRating = this.config.getRequiredRatingForBeliever();
                 break;
             case MESSAGES_AND_RATING:
-                requiredMessages = config.getRequiredMessagesForBeliever();
-                requiredRating = config.getRequiredRatingForBeliever();
+                requiredMessages = this.config.getRequiredMessagesForBeliever();
+                requiredRating = this.config.getRequiredRatingForBeliever();
                 break;
         }
 
