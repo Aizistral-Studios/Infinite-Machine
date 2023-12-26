@@ -14,14 +14,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-import com.aizistral.infmachine.data.LeaderboardType;
+import com.aizistral.infmachine.data.*;
 import com.aizistral.infmachine.utils.Truple;
 import org.jetbrains.annotations.Nullable;
 
 import com.aizistral.infmachine.config.AsyncJSONConfig;
-import com.aizistral.infmachine.data.ChannelType;
-import com.aizistral.infmachine.data.IndexationMode;
-import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
@@ -249,12 +246,12 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Truple<Long, String, Integer, Integer>> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
+    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
 
-            List<Truple<Long, String, Integer, Integer>> topSenders = new ArrayList<>();
+            List<LeaderboardEntry> topSenders = new ArrayList<>();
             List<CompletableFuture<String>> futuresStr = new ArrayList<>();
             List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
 
@@ -287,7 +284,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
                 int pos = i - start;
 
                 val futureStr = new CompletableFuture<String>();
-                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Truple<>(entry.getA(), s, entry.getB(), entry.getC())));
+                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new LeaderboardEntry(entry.getA(), s, entry.getB(), entry.getC())));
 
                 futuresStr.add(futureStr);
                 futuresVoid.add(futureVoid);
@@ -314,13 +311,13 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
                 case MESSAGES:
                     topSenders.sort((a, b) ->
                     {
-                        return b.getC() - a.getC();
+                        return b.getMessageCount() - a.getMessageCount();
                     });
                     break;
                 case RATING:
                     topSenders.sort((a, b) ->
                     {
-                        return b.getD() - a.getD();
+                        return b.getRating() - a.getRating();
                     });
                     break;
             }

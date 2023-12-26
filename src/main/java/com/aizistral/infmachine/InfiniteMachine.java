@@ -236,8 +236,8 @@ public class InfiniteMachine extends ListenerAdapter {
 
 			for (int i = 0; i < senders.size(); i++)
 			{
-				val truple = senders.get(i);
-				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, truple.getB(), truple.getA(), truple.getC(), truple.getD());
+				val leaderboardEntry = senders.get(i);
+				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getMessageCount(), leaderboardEntry.getRating());
 			}
 			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 		}else if(type == LeaderboardType.RATING){
@@ -258,8 +258,8 @@ public class InfiniteMachine extends ListenerAdapter {
 
 		    for (int i = 0; i < senders.size(); i++)
 		    {
-			    val truple = senders.get(i);
-			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, truple.getB(), truple.getA(), truple.getD(), truple.getC());
+			    val leaderboardEntry = senders.get(i);
+			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
 		    }
 		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }
