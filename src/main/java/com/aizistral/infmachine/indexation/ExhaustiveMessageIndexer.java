@@ -156,11 +156,9 @@ public class ExhaustiveMessageIndexer {
 
                         if (!author.isSystem() && !author.isBot()) {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
-                                if (!message.getType().equals(MessageType.SLASH_COMMAND)) {
-                                    if(message.getContentRaw().length() >= minMessageLength) {
-                                        this.database.addMessageCount(author.getIdLong(), 1);
-                                        this.database.addMessageRating(author.getIdLong(), InfiniteMachine.evaluateMessage(message));
-                                    }
+                                if(message.getContentRaw().length() >= minMessageLength) {
+                                    this.database.addMessageCount(author.getIdLong(), 1);
+                                    this.database.addMessageRating(author.getIdLong(), InfiniteMachine.evaluateMessage(message));
                                 }
                             }
                         }

@@ -414,6 +414,9 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	//TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
 	public static int evaluateMessage(Message messageRaw) {
+		//Exclude slash commands from rating
+		if(messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
+
 		//lengthSegmentSize describes the size of each individual message segment
 		int lengthSegmentSize = 50;
 

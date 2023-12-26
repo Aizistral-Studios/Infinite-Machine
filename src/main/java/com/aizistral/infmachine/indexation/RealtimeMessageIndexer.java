@@ -61,10 +61,8 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             }
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    if (!event.getMessage().getType().equals(MessageType.SLASH_COMMAND)) {
-                        if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()) {
-                            this.onNewMessage(user, event.getMessage());
-                        }
+                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()) {
+                        this.onNewMessage(user, event.getMessage());
                     }
                 }
             }
