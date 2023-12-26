@@ -309,20 +309,17 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             futuresVoid.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
-            switch (type)
-            {
-                case MESSAGES:
-                    topSenders.sort((a, b) ->
-                    {
-                        return b.getC() - a.getC();
-                    });
-                    break;
-                case RATING:
-                    topSenders.sort((a, b) ->
-                    {
-                        return b.getD() - a.getD();
-                    });
-                    break;
+            switch (type) {
+            case MESSAGES:
+                topSenders.sort((a, b) -> {
+                    return b.getC() - a.getC();
+                });
+                break;
+            case RATING:
+                topSenders.sort((a, b) -> {
+                    return b.getD() - a.getD();
+                });
+                break;
             }
 
             return topSenders;

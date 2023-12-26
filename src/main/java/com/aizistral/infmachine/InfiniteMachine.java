@@ -212,57 +212,60 @@ public class InfiniteMachine extends ListenerAdapter {
 		    (a, b) -> this.shutdown());
 	} else if ("leaderboard".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
-	    OptionMapping typeMapping = event.getOption("type");
-	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
-	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
-		//Initializing type with default value
+		OptionMapping typeMapping = event.getOption("type");
+		String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
+		val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName))
+			.findAny();
+
+		// Initializing type with default value
 		LeaderboardType type = LeaderboardType.RATING;
-		if(typeVal.isPresent()) type = typeVal.get();
-		if(type == LeaderboardType.MESSAGES){
-			val option = event.getOption("start");
-			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
-			val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
-			String reply = "";
+		if (typeVal.isPresent()) {
+		    type = typeVal.get();
+		}
 
-			if (start == 1)
-			{
-				reply += Localization.translate("msg.leaderboardHeader") + "\n";
-			}
-			else
-			{
-				reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
-			}
-
-			for (int i = 0; i < senders.size(); i++)
-			{
-				val truple = senders.get(i);
-				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, truple.getB(), truple.getA(), truple.getC(), truple.getD());
-			}
-			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-		}else if(type == LeaderboardType.RATING){
+		if (type == LeaderboardType.MESSAGES) {
 		    val option = event.getOption("start");
 		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
 		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
 		    String reply = "";
 
-		    if (start == 1)
-		    {
-			    reply += Localization.translate("msg.leaderboardHeader") + "\n";
-		    }
-		    else
-		    {
-			    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+		    if (start == 1) {
+			reply += Localization.translate("msg.leaderboardHeader") + "\n";
+		    } else {
+			reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
 		    }
 
-		    for (int i = 0; i < senders.size(); i++)
-		    {
-			    val truple = senders.get(i);
-			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, truple.getB(), truple.getA(), truple.getD(), truple.getC());
+		    for (int i = 0; i < senders.size(); i++) {
+			val truple = senders.get(i);
+			reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start,
+				truple.getB(), truple.getA(), truple.getC(), truple.getD());
 		    }
+
 		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-	    }
+		} else if (type == LeaderboardType.RATING) {
+		    val option = event.getOption("start");
+		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+
+		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
+		    String reply = "";
+
+		    if (start == 1) {
+			reply += Localization.translate("msg.leaderboardHeader") + "\n";
+		    } else {
+			reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+		    }
+
+		    for (int i = 0; i < senders.size(); i++) {
+			val truple = senders.get(i);
+			reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start,
+				truple.getB(), truple.getA(), truple.getD(), truple.getC());
+		    }
+
+		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+		}
+
 		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
@@ -317,15 +320,15 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    String msg = "<@%s> has been pet.";
 
-		//TODO add more funny interactions
+	    //TODO add more funny interactions
 	    if (id == 440381346339094539L) {
-			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
-			if(event.getUser().getIdLong() == 267067816627273730L){
-				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
-			}else{
-				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
-						+ "No matter what machines you wield...";
-			}
+		// Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+                if (event.getUser().getIdLong() == 267067816627273730L) {
+                    msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+                } else {
+                    msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+                            + "No matter what machines you wield...";
+                }
 
 		event.reply(msg).queue();
 		return;
@@ -412,23 +415,26 @@ public class InfiniteMachine extends ListenerAdapter {
 	}
     }
 
-	//TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
-	public static int evaluateMessage(Message messageRaw) {
-		//Exclude slash commands from rating
-		if(messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
+    // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
+    public static int evaluateMessage(Message messageRaw) {
+	// Exclude slash commands from rating
+	if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
+	    return 0;
 
-		//lengthSegmentSize describes the size of each individual message segment
-		int lengthSegmentSize = 50;
+	// lengthSegmentSize describes the size of each individual message segment
+	int lengthSegmentSize = 50;
 
-		//linkLengthValueInChars describes the flat amount of chars that a Link will contribute to a message Rating
-		int linkLengthValueInChars = lengthSegmentSize / 2;
+	// linkLengthValueInChars describes the flat amount of chars that a Link will
+	// contribute to a message Rating
+	int linkLengthValueInChars = lengthSegmentSize / 2;
 
-		ProcessedMessage message = new ProcessedMessage(messageRaw);
-		int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
-		int emojiContributionToLength = message.getEmojiCount();
-		int segments = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength) / lengthSegmentSize;
-		return (segments * (segments + 1)) / 2 + 1;
+	ProcessedMessage message = new ProcessedMessage(messageRaw);
+	int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
+	int emojiContributionToLength = message.getEmojiCount();
+	int segments = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength)
+		/ lengthSegmentSize;
+	return (segments * (segments + 1)) / 2 + 1;
 
-	}
+    }
 
 }

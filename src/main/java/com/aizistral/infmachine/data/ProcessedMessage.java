@@ -13,25 +13,27 @@ public class ProcessedMessage {
     public ProcessedMessage(Message messageInput) {
         String message = messageInput.getContentRaw();
 
-        if (!detectLinks(message).isEmpty()) {
+        if (!this.detectLinks(message).isEmpty()) {
             message = removeLinks(message);
         }
-        if (!detectEmojis(message).isEmpty()) {
+
+        if (!this.detectEmojis(message).isEmpty()) {
             message = removeEmojis(message);
         }
+
         this.message = message;
     }
 
     public String getMessage() {
-        return message;
+        return this.message;
     }
 
     public int getLinkCount() {
-        return linkCount;
+        return this.linkCount;
     }
 
     public int getEmojiCount() {
-        return emojiCount;
+        return this.emojiCount;
     }
 
     private String detectLinks(String message) {
@@ -39,10 +41,12 @@ public class ProcessedMessage {
         Matcher matcher = linkPattern.matcher(message);
 
         StringBuilder links = new StringBuilder();
+
         while (matcher.find()) {
             links.append(matcher.group()).append("\n");
-            linkCount++;
+            this.linkCount++;
         }
+
         return links.toString();
     }
 
@@ -54,7 +58,7 @@ public class ProcessedMessage {
 
         while (matcher.find()) {
             emojis.append(matcher.group()).append("\n");
-            emojiCount++;
+            this.emojiCount++;
         }
         return emojis.toString();
     }
@@ -70,4 +74,5 @@ public class ProcessedMessage {
         Matcher matcher = emojiPattern.matcher(message);
         return matcher.replaceAll("");
     }
+
 }
