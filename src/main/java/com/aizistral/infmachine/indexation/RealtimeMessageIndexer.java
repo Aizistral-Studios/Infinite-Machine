@@ -77,8 +77,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
         long requiredMessages = 0;
         long requiredRating = 0;
 
-        switch (config.getBelieverMethod())
-        {
+        switch (config.getBelieverMethod()) {
             case MESSAGES:
                 requiredMessages = config.getRequiredMessagesForBeliever();
                 break;

@@ -162,7 +162,6 @@ public class ExhaustiveMessageIndexer {
                                         this.database.addMessageRating(author.getIdLong(), InfiniteMachine.evaluateMessage(message));
                                     }
                                 }
-
                             }
                         }
 
