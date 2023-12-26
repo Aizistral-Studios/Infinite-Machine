@@ -2,7 +2,6 @@ package com.aizistral.infmachine.database.local;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,11 +11,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 import com.aizistral.infmachine.data.*;
-import com.aizistral.infmachine.utils.Truple;
-import org.jetbrains.annotations.Nullable;
 
 import com.aizistral.infmachine.config.AsyncJSONConfig;
 import com.aizistral.infmachine.database.MachineDatabase;
@@ -29,10 +25,6 @@ import lombok.NoArgsConstructor;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
-import net.dv8tion.jda.api.requests.ErrorResponse;
 
 public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements MachineDatabase {
     private static final StandardLogger LOGGER = new StandardLogger("JSONDatabase");
@@ -306,17 +298,14 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             futuresVoid.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
-            switch (type)
-            {
+            switch (type) {
                 case MESSAGES:
-                    topSenders.sort((a, b) ->
-                    {
+                    topSenders.sort((a, b) -> {
                         return b.getMessageCount() - a.getMessageCount();
                     });
                     break;
                 case RATING:
-                    topSenders.sort((a, b) ->
-                    {
+                    topSenders.sort((a, b) -> {
                         return b.getRating() - a.getRating();
                     });
                     break;
@@ -329,19 +318,32 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
-    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID) {
+    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardType type) {
         try {
             this.readLock.lock();
-            int rating = 1;
+            int rank = 1;
             int count = this.getMessageCount(userID);
+            int rating = this.getMessageRating(userID);
 
-            for (val entry : this.getData().messageCounts.entrySet()) {
-                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {
-                    rating++;
-                }
+            switch (type) {
+                case MESSAGES:
+                    for (val entry : this.getData().messageCounts.entrySet()) {
+                        if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {
+                            rank++;
+                        }
+                    }
+                    break;
+                case RATING:
+                    for (val entry : this.getData().messageRating.entrySet()) {
+                        if (entry.getKey().longValue() != userID && entry.getValue().intValue() > rating) {
+                            rank++;
+                        }
+                    }
+                    break;
             }
 
-            return new Tuple<>(rating, count);
+
+            return new Triple<>(rank, count, rating);
         } finally {
             this.readLock.unlock();
         }

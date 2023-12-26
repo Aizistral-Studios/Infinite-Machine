@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.aizistral.infmachine.data.*;
 import com.aizistral.infmachine.utils.Triple;
-import com.aizistral.infmachine.utils.Truple;
 import com.aizistral.infmachine.utils.Tuple;
 
 import net.dv8tion.jda.api.JDA;
@@ -45,7 +44,7 @@ public interface MachineDatabase {
 
     public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit);
 
-    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
+    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardType type);
 
     public String getLastVersion();
 

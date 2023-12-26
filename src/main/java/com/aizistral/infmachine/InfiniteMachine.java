@@ -93,6 +93,9 @@ public class InfiniteMachine extends ListenerAdapter {
 			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
+		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
+			Arrays.stream(LeaderboardType.values()).map(LeaderboardType::toString)
+			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
 		Commands.slash("clearindex", Localization.translate("cmd.clearindex.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
@@ -215,73 +218,94 @@ public class InfiniteMachine extends ListenerAdapter {
 	    OptionMapping typeMapping = event.getOption("type");
 	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
 	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
+
 		//Initializing type with default value
 		LeaderboardType type = LeaderboardType.RATING;
-		if(typeVal.isPresent()) type = typeVal.get();
-		if(type == LeaderboardType.MESSAGES){
+
+		if (typeVal.isPresent()) {
+			type = typeVal.get();
+		}
+
+		if (type == LeaderboardType.MESSAGES) {
 			val option = event.getOption("start");
 			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
 			val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
 			String reply = "";
 
-			if (start == 1)
-			{
+			if (start == 1) {
 				reply += Localization.translate("msg.leaderboardHeader") + "\n";
-			}
-			else
-			{
+			} else {
 				reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
 			}
 
-			for (int i = 0; i < senders.size(); i++)
-			{
+			for (int i = 0; i < senders.size(); i++) {
 				val leaderboardEntry = senders.get(i);
 				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getMessageCount(), leaderboardEntry.getRating());
 			}
+
 			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-		}else if(type == LeaderboardType.RATING){
+		} else if (type == LeaderboardType.RATING) {
 		    val option = event.getOption("start");
 		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
 		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
 		    String reply = "";
 
-		    if (start == 1)
-		    {
+		    if (start == 1) {
 			    reply += Localization.translate("msg.leaderboardHeader") + "\n";
-		    }
-		    else
-		    {
+		    } else {
 			    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
 		    }
 
-		    for (int i = 0; i < senders.size(); i++)
-		    {
+		    for (int i = 0; i < senders.size(); i++) {
 			    val leaderboardEntry = senders.get(i);
 			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
 		    }
 		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }
+
 		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
 	} else if ("rating".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
+	    OptionMapping typeMapping = event.getOption("type");
+	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
+	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
+	    //Initializing type with default value
+	    LeaderboardType type = LeaderboardType.RATING;
+	    if(typeVal.isPresent()) type = typeVal.get();
+
 		OptionMapping mapping = event.getOption("user");
 		User user = null;
 		String message = null;
 
-		if (mapping != null && mapping.getAsUser() != event.getUser()) {
-		    user = mapping.getAsUser();
-		    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-		    message = Localization.translate("msg.rating", user.getIdLong(), rating.getA(),
-			    rating.getB());
-		} else {
-		    user = event.getUser();
-		    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-		    message = Localization.translate("msg.ratingOwn", rating.getA(), rating.getB());
-		}
+		    switch (type) {
+			    case MESSAGES:
+					if (mapping != null && mapping.getAsUser() != event.getUser()) {
+				    user = mapping.getAsUser();
+				    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
+				    message = Localization.translate("msg.rating", user.getIdLong(), rating.getA(), rating.getB(), rating.getC());
+				    } else {
+					    user = event.getUser();
+					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
+					    message = Localization.translate("msg.ratingOwn", rating.getA(), rating.getB(), rating.getC());
+				    }
+				    break;
+			    case RATING:
+				    if (mapping != null && mapping.getAsUser() != event.getUser()) {
+					    user = mapping.getAsUser();
+					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
+					    message = Localization.translate("msg.ratingAlt", user.getIdLong(), rating.getA(), rating.getB(), rating.getC());
+				    } else {
+					    user = event.getUser();
+					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
+					    message = Localization.translate("msg.ratingOwnAlt", rating.getA(), rating.getB(), rating.getC());
+				    }
+				    break;
+		    }
+
 
 		return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
@@ -417,17 +441,14 @@ public class InfiniteMachine extends ListenerAdapter {
 		//Exclude slash commands from rating
 		if(messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
 
-		//lengthSegmentSize describes the size of each individual message segment
-		int lengthSegmentSize = 50;
-
 		//linkLengthValueInChars describes the flat amount of chars that a Link will contribute to a message Rating
-		int linkLengthValueInChars = lengthSegmentSize / 2;
+		int linkLengthValueInChars = 25;
 
 		ProcessedMessage message = new ProcessedMessage(messageRaw);
 		int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
 		int emojiContributionToLength = message.getEmojiCount();
-		int segments = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength) / lengthSegmentSize;
-		return (segments * (segments + 1)) / 2 + 1;
+		int length = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength);
+		return length * length / 5000 + 1;
 
 	}
 
