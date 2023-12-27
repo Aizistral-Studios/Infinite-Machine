@@ -13,6 +13,7 @@ import com.aizistral.infmachine.utils.Utils;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
@@ -55,12 +56,13 @@ public class ExhaustiveMessageIndexer {
             List<GuildMessageChannel> channels = new ArrayList<>();
             List<TextChannel> textChannels = new ArrayList<>();
             List<ThreadChannel> threads = new ArrayList<>();
+            List<VoiceChannel> voiceChannels = new ArrayList<>();
 
             LOGGER.log("Starting initial domain evaluation...");
 
-            this.guild.getChannels().stream().filter(c -> c instanceof TextChannel).map(c -> (TextChannel) c)
-            .forEach(textChannels::add);
+            this.guild.getChannels().stream().filter(c -> c instanceof TextChannel).map(c -> (TextChannel) c).forEach(textChannels::add);
             this.guild.retrieveActiveThreads().complete().forEach(threads::add);
+            this.guild.getChannels().stream().filter(c -> c instanceof VoiceChannel).map(c -> (VoiceChannel) c).forEach((voiceChannels::add));
 
             if (iteration < 1) {
                 // Only get archived threads in first iteration, since if they remain archived -
@@ -74,9 +76,11 @@ public class ExhaustiveMessageIndexer {
             LOGGER.log("Initial domain evaluation complete.");
             LOGGER.log("Text channels found: %s", textChannels.size());
             LOGGER.log("Threads found: %s", threads.size());
+            LOGGER.log("VoiceChannels found: %s", voiceChannels.size());
 
             channels.addAll(textChannels);
             channels.addAll(threads);
+            channels.addAll(voiceChannels);
 
             for (GuildMessageChannel channel : channels) {
                 LOGGER.log("Inspecting channel: " + channel.getName());
