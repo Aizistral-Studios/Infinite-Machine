@@ -124,8 +124,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
-    public int getMessageRating(long userID)
-    {
+    public int getMessageRating(long userID) {
         try {
             this.readLock.lock();
             return this.getData().messageRating.getOrDefault(userID, 0);
@@ -135,24 +134,22 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
-    public int setMessageRating(long userID, int score)
-    {
+    public int setMessageRating(long userID, int points) {
         try {
             this.writeLock.lock();
-            this.getData().messageRating.put(userID, score);
+            this.getData().messageRating.put(userID, points);
             this.needsSaving.set(true);
-            return score;
+            return points;
         } finally {
             this.writeLock.unlock();
         }
     }
 
     @Override
-    public int addMessageRating(long userID, int score)
-    {
+    public int addMessageRating(long userID, int points) {
         try {
             this.writeLock.lock();
-            int newScore = this.getMessageRating(userID) + score;
+            int newScore = this.getMessageRating(userID) + points;
             this.setMessageRating(userID, newScore);
             return newScore;
         } finally {
@@ -237,7 +234,6 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     //    }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit) {
         try {
             this.readLock.lock();

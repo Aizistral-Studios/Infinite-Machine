@@ -415,19 +415,20 @@ public class InfiniteMachine extends ListenerAdapter {
 
     // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
     public static int evaluateMessage(Message messageRaw) {
-	// Exclude slash commands from rating
-	if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
-	    return 0;
+        // Exclude slash commands from rating
+        if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
+            return 0;
 
-		//linkLengthValueInChars describes the flat amount of chars that a Link will contribute to a message Rating
-		int linkLengthValueInChars = 25;
+        // linkLengthValueInChars describes the flat amount of chars that a Link will
+        // contribute to a message Rating
+        int linkLengthValueInChars = 25;
 
-		ProcessedMessage message = new ProcessedMessage(messageRaw);
-		int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
-		int emojiContributionToLength = message.getEmojiCount();
-		int length = (message.getMessage().length() + linkContributionToLength + emojiContributionToLength);
-		return length * length / 5000 + 1;
+        ProcessedMessage message = new ProcessedMessage(messageRaw);
+        int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
+        int emojiContributionToLength = message.getEmojiCount();
+        int length = message.getMessage().length() + linkContributionToLength + emojiContributionToLength;
 
+        return length * length;
     }
 
 }
