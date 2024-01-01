@@ -42,9 +42,9 @@ public interface MachineDatabase {
 
     public void resetIndexation();
 
-    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit);
+    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit);
 
-    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardType type);
+    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardOrder order);
 
     public String getLastVersion();
 

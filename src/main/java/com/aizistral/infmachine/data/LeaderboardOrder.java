@@ -1,6 +1,6 @@
 package com.aizistral.infmachine.data;
 
-public enum LeaderboardType {
+public enum LeaderboardOrder {
     MESSAGES,
     RATING;
 }

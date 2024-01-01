@@ -238,7 +238,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardType type, int start, int limit) {
+    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit) {
         try {
             this.readLock.lock();
             long time = System.currentTimeMillis();
@@ -298,7 +298,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             futuresVoid.forEach(CompletableFuture::join);
             LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
 
-            switch (type) {
+            switch (order) {
                 case MESSAGES:
                     topSenders.sort((a, b) -> {
                         return b.getMessageCount() - a.getMessageCount();
@@ -318,14 +318,14 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
-    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardType type) {
+    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardOrder order) {
         try {
             this.readLock.lock();
             int rank = 1;
             int count = this.getMessageCount(userID);
             int rating = this.getMessageRating(userID);
 
-            switch (type) {
+            switch (order) {
                 case MESSAGES:
                     for (val entry : this.getData().messageCounts.entrySet()) {
                         if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {

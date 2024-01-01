@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.IndexationMode;
-import com.aizistral.infmachine.data.LeaderboardType;
+import com.aizistral.infmachine.data.LeaderboardOrder;
 import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
@@ -88,13 +88,13 @@ public class InfiniteMachine extends ListenerAdapter {
 		Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
 		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
-		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
-			Arrays.stream(LeaderboardType.values()).map(LeaderboardType::toString)
+		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.order",
+			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
 			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
 		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
-			Arrays.stream(LeaderboardType.values()).map(LeaderboardType::toString)
+			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
 			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
 		Commands.slash("clearindex", Localization.translate("cmd.clearindex.desc"))
@@ -217,16 +217,16 @@ public class InfiniteMachine extends ListenerAdapter {
 	    event.deferReply().flatMap(v -> {
 	    OptionMapping typeMapping = event.getOption("type");
 	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
-	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
+	    val typeVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(typeName)).findAny();
 
 		//Initializing type with default value
-		LeaderboardType type = LeaderboardType.RATING;
+		LeaderboardOrder type = LeaderboardOrder.RATING;
 
 		if (typeVal.isPresent()) {
 			type = typeVal.get();
 		}
 
-		if (type == LeaderboardType.MESSAGES) {
+		if (type == LeaderboardOrder.MESSAGES) {
 			val option = event.getOption("start");
 			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
@@ -245,7 +245,7 @@ public class InfiniteMachine extends ListenerAdapter {
 			}
 
 			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-		} else if (type == LeaderboardType.RATING) {
+		} else if (type == LeaderboardOrder.RATING) {
 		    val option = event.getOption("start");
 		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
@@ -273,10 +273,12 @@ public class InfiniteMachine extends ListenerAdapter {
 	    event.deferReply().flatMap(v -> {
 	    OptionMapping typeMapping = event.getOption("type");
 	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
-	    val typeVal = Arrays.stream(LeaderboardType.values()).filter(m -> m.toString().equals(typeName)).findAny();
+	    val typeVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(typeName)).findAny();
 	    //Initializing type with default value
-	    LeaderboardType type = LeaderboardType.RATING;
-	    if(typeVal.isPresent()) type = typeVal.get();
+	    LeaderboardOrder type = LeaderboardOrder.RATING;
+	    if(typeVal.isPresent()) {
+            type = typeVal.get();
+        }
 
 		OptionMapping mapping = event.getOption("user");
 		User user = null;
