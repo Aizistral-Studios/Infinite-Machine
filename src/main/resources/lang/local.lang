@@ -64,8 +64,5 @@ msg.leaderboardEntryMessages=%1$s. **%2$s** (<@%3$s>): %4$s messages | %5$s rati
 msg.leaderboardEntryRating=%1$s. **%2$s** (<@%3$s>): %4$s rating | %5$s messages
 msg.openVotingSuccess=Succesfully opened voting for user <@%s>!
 msg.openVotingFail=Failed to open a new voting for user <@%s>. Is there one already?
-msg.ratingOwn=Your position, in regards to messages, on the leaderboard is: **#%s**\nYou have sent: **%s messages**\nYour Rating is: **%s**
-msg.rating=<@%s>'s position, in regards to messages, on the leaderboard is: **#%s**\nThey have sent: **%s messages**\nTheir Rating is: **%s**
-msg.ratingOwnAlt=Your position, in regards to rating, on the leaderboard is: **#%s**\nYou have sent: **%s messages**\nYour Rating is: **%s**
-msg.ratingAlt=<@%s>'s position, in regards to rating, on the leaderboard is: **#%s**\nThey have sent: **%s messages**\nTheir Rating is: **%s**
-
+msg.ratingOwn=Your rating stats:\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**
+msg.rating=<@%s>'s rating stats:\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**

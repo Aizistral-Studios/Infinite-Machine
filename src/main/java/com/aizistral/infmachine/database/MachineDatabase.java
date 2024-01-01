@@ -44,7 +44,7 @@ public interface MachineDatabase {
 
     public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit);
 
-    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardOrder order);
+    public UserRating getSenderRating(JDA jda, Guild guild, long userID);
 
     public String getLastVersion();
 

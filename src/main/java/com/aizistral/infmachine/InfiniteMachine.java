@@ -93,9 +93,6 @@ public class InfiniteMachine extends ListenerAdapter {
 			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
-		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.type",
-			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
-			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
 		Commands.slash("clearindex", Localization.translate("cmd.clearindex.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
@@ -269,48 +266,25 @@ public class InfiniteMachine extends ListenerAdapter {
 		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
-	} else if ("rating".equals(event.getName())) {
-	    event.deferReply().flatMap(v -> {
-	    OptionMapping typeMapping = event.getOption("type");
-	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
-	    val typeVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(typeName)).findAny();
-	    //Initializing type with default value
-	    LeaderboardOrder type = LeaderboardOrder.RATING;
-	    if(typeVal.isPresent()) {
-            type = typeVal.get();
-        }
+        } else if ("rating".equals(event.getName())) {
+            event.deferReply().flatMap(v -> {
+                OptionMapping mapping = event.getOption("user");
+                User user = null;
+                String message = null;
 
-		OptionMapping mapping = event.getOption("user");
-		User user = null;
-		String message = null;
+                if (mapping != null && mapping.getAsUser() != event.getUser()) {
+                    user = mapping.getAsUser();
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
+                    message = Localization.translate("msg.rating", user.getIdLong(), rating.getPositionByMessages(),
+                            rating.getMessageCount(), rating.getPositionByRating(), rating.getRatingPoints());
+                } else {
+                    user = event.getUser();
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
+                    message = Localization.translate("msg.ratingOwn", rating.getPositionByMessages(),
+                            rating.getMessageCount(), rating.getPositionByRating(), rating.getRatingPoints());
+                }
 
-		    switch (type) {
-			    case MESSAGES:
-					if (mapping != null && mapping.getAsUser() != event.getUser()) {
-				    user = mapping.getAsUser();
-				    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
-				    message = Localization.translate("msg.rating", user.getIdLong(), rating.getA(), rating.getB(), rating.getC());
-				    } else {
-					    user = event.getUser();
-					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
-					    message = Localization.translate("msg.ratingOwn", rating.getA(), rating.getB(), rating.getC());
-				    }
-				    break;
-			    case RATING:
-				    if (mapping != null && mapping.getAsUser() != event.getUser()) {
-					    user = mapping.getAsUser();
-					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
-					    message = Localization.translate("msg.ratingAlt", user.getIdLong(), rating.getA(), rating.getB(), rating.getC());
-				    } else {
-					    user = event.getUser();
-					    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong(), type);
-					    message = Localization.translate("msg.ratingOwnAlt", rating.getA(), rating.getB(), rating.getC());
-				    }
-				    break;
-		    }
-
-
-		return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
+                return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
 	} else if ("clearindex".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {

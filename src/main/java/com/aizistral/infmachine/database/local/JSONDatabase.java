@@ -318,32 +318,28 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
-    public Triple<Integer, Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID, LeaderboardOrder order) {
+    public UserRating getSenderRating(JDA jda, Guild guild, long userID) {
         try {
             this.readLock.lock();
-            int rank = 1;
-            int count = this.getMessageCount(userID);
+            int msgsPosition = 1;
+            int ratingPosition = 1;
+
+            int msgs = this.getMessageCount(userID);
             int rating = this.getMessageRating(userID);
 
-            switch (order) {
-                case MESSAGES:
-                    for (val entry : this.getData().messageCounts.entrySet()) {
-                        if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {
-                            rank++;
-                        }
-                    }
-                    break;
-                case RATING:
-                    for (val entry : this.getData().messageRating.entrySet()) {
-                        if (entry.getKey().longValue() != userID && entry.getValue().intValue() > rating) {
-                            rank++;
-                        }
-                    }
-                    break;
+            for (val entry : this.getData().messageCounts.entrySet()) {
+                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > msgs) {
+                    msgsPosition++;
+                }
             }
 
+            for (val entry : this.getData().messageRating.entrySet()) {
+                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > rating) {
+                    ratingPosition++;
+                }
+            }
 
-            return new Triple<>(rank, count, rating);
+            return new UserRating(userID, msgs, rating, msgsPosition, ratingPosition);
         } finally {
             this.readLock.unlock();
         }
