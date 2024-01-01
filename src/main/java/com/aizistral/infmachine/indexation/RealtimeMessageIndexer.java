@@ -76,16 +76,16 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
         long requiredRating = 0;
 
         switch (this.config.getBelieverMethod()) {
-            case MESSAGES:
-                requiredMessages = this.config.getRequiredMessagesForBeliever();
-                break;
-            case RATING:
-                requiredRating = this.config.getRequiredRatingForBeliever();
-                break;
-            case MESSAGES_AND_RATING:
-                requiredMessages = this.config.getRequiredMessagesForBeliever();
-                requiredRating = this.config.getRequiredRatingForBeliever();
-                break;
+        case MESSAGES:
+            requiredMessages = this.config.getRequiredMessagesForBeliever();
+            break;
+        case RATING:
+            requiredRating = this.config.getRequiredRatingForBeliever();
+            break;
+        case MESSAGES_AND_RATING:
+            requiredMessages = this.config.getRequiredMessagesForBeliever();
+            requiredRating = this.config.getRequiredRatingForBeliever();
+            break;
         }
 
         if (count >= requiredMessages && rating >= requiredRating) {

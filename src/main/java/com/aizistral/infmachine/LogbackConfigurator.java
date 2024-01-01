@@ -23,7 +23,7 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
     public ExecutionStatus configure(LoggerContext context) {
         this.addInfo("Setting up custom configuration.");
 
-        LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<ILoggingEvent>();
+        LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(context);
 
         PatternLayout layout = new PatternLayout();

@@ -24,7 +24,11 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageType;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -40,7 +44,7 @@ public class InfiniteMachine extends ListenerAdapter {
     public static final InfiniteMachine INSTANCE = new InfiniteMachine(Main.JDA);
 
     static {
-	INSTANCE.awake();
+        INSTANCE.awake();
     }
 
     private final JDA jda;
@@ -64,164 +68,164 @@ public class InfiniteMachine extends ListenerAdapter {
 
     @SneakyThrows
     private InfiniteMachine(JDA jda) {
-	this.jda = jda;
-	this.config = InfiniteConfig.INSTANCE;
-	this.database = JSONDatabase.INSTANCE;
-	this.startupTime = System.currentTimeMillis();
+        this.jda = jda;
+        this.config = InfiniteConfig.INSTANCE;
+        this.database = JSONDatabase.INSTANCE;
+        this.startupTime = System.currentTimeMillis();
 
-	Runtime.getRuntime().addShutdownHook(new Thread(this::trySave));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::trySave));
 
-	// TODO Better localization
-	this.jda.updateCommands().addCommands(
-		Commands.slash("ping", Localization.translate("cmd.ping.desc")),
-		Commands.slash("version", Localization.translate("cmd.version.desc")),
-		Commands.slash("uptime", Localization.translate("cmd.uptime.desc")),
-		Commands.slash("pet", Localization.translate("cmd.pet.desc"))
-		.addOption(OptionType.USER, "user", Localization.translate("cmd.pet.user"), false),
-		Commands.slash("setindexmode", Localization.translate("cmd.setindexmode.desc"))
-		.setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-		.addOption(OptionType.STRING, "mode", Localization.translate("cmd.setindexmode.mode",
-			Arrays.stream(IndexationMode.values()).map(IndexationMode::toString)
-			.collect(Collectors.joining("/"))), true),
-		Commands.slash("getindexmode", Localization.translate("cmd.getindexmode.desc"))
-		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
-		Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
-		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
-		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
-		.addOption(OptionType.STRING, "order", Localization.translate("cmd.leaderboard.order",
-			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
-			.collect(Collectors.joining("/"))), false)
-		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
-		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
-		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
-		Commands.slash("clearindex", Localization.translate("cmd.clearindex.desc"))
-		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
-		Commands.slash("openvoting", Localization.translate("cmd.openvoting.desc"))
-		.addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
-		.addOption(OptionType.STRING, "type",Localization.translate("cmd.openvoting.type",
-			Arrays.stream(Voting.Type.values()).map(Voting.Type::toString)
-			.collect(Collectors.joining("/"))), false)
-		.setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-		).queue();
+        // TODO Better localization
+        this.jda.updateCommands().addCommands(
+                Commands.slash("ping", Localization.translate("cmd.ping.desc")),
+                Commands.slash("version", Localization.translate("cmd.version.desc")),
+                Commands.slash("uptime", Localization.translate("cmd.uptime.desc")),
+                Commands.slash("pet", Localization.translate("cmd.pet.desc"))
+                .addOption(OptionType.USER, "user", Localization.translate("cmd.pet.user"), false),
+                Commands.slash("setindexmode", Localization.translate("cmd.setindexmode.desc"))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
+                .addOption(OptionType.STRING, "mode", Localization.translate("cmd.setindexmode.mode",
+                        Arrays.stream(IndexationMode.values()).map(IndexationMode::toString)
+                        .collect(Collectors.joining("/"))), true),
+                Commands.slash("getindexmode", Localization.translate("cmd.getindexmode.desc"))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
+                .addOption(OptionType.STRING, "order", Localization.translate("cmd.leaderboard.order",
+                        Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
+                        .collect(Collectors.joining("/"))), false)
+                .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
+                Commands.slash("rating", Localization.translate("cmd.rating.desc"))
+                .addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
+                Commands.slash("clearindex", Localization.translate("cmd.clearindex.desc"))
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                Commands.slash("openvoting", Localization.translate("cmd.openvoting.desc"))
+                .addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
+                .addOption(OptionType.STRING, "type",Localization.translate("cmd.openvoting.type",
+                        Arrays.stream(Voting.Type.values()).map(Voting.Type::toString)
+                        .collect(Collectors.joining("/"))), false)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
+                ).queue();
 
-	this.jda.awaitReady();
+        this.jda.awaitReady();
 
-	this.minMessageLength = (int) this.config.getMinMessageLength();
-	this.domain = jda.getGuildById(this.config.getDomainID());
+        this.minMessageLength = (int) this.config.getMinMessageLength();
+        this.domain = jda.getGuildById(this.config.getDomainID());
 
-	if (this.domain == null) {
-	    this.terminate(new RuntimeException("The Architect's Domain not found"));
-	    throw new IllegalStateException();
-	}
+        if (this.domain == null) {
+            this.terminate(new RuntimeException("The Architect's Domain not found"));
+            throw new IllegalStateException();
+        }
 
-	this.templeChannel = this.domain.getTextChannelById(this.config.getTempleChannelID());
-	this.machineChannel = this.domain.getTextChannelById(this.config.getMachineChannelID());
-	this.councilChannel = this.domain.getTextChannelById(this.config.getCouncilChannelID());
-	this.suggestionsChannel = this.domain.getTextChannelById(this.config.getSuggestionsChannelID());
-	this.believersRole = this.domain.getRoleById(this.config.getBelieversRoleID());
-	this.dwellersRole = this.domain.getRoleById(this.config.getDwellersRoleID());
-	this.beholdersRole = this.domain.getRoleById(this.config.getBeholdersRoleID());
+        this.templeChannel = this.domain.getTextChannelById(this.config.getTempleChannelID());
+        this.machineChannel = this.domain.getTextChannelById(this.config.getMachineChannelID());
+        this.councilChannel = this.domain.getTextChannelById(this.config.getCouncilChannelID());
+        this.suggestionsChannel = this.domain.getTextChannelById(this.config.getSuggestionsChannelID());
+        this.believersRole = this.domain.getRoleById(this.config.getBelieversRoleID());
+        this.dwellersRole = this.domain.getRoleById(this.config.getDwellersRoleID());
+        this.beholdersRole = this.domain.getRoleById(this.config.getBeholdersRoleID());
     }
 
     private void awake() {
-	this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
-		this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),
-		this.database);
+        this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
+                this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),
+                this.database);
 
-	this.jda.addEventListener(this);
-	this.jda.addEventListener(this.votingHandler);
+        this.jda.addEventListener(this);
+        this.jda.addEventListener(this.votingHandler);
 
-	this.setIndexationMode(this.config.getStartupIndexationMode());
+        this.setIndexationMode(this.config.getStartupIndexationMode());
 
-	LOGGER.log("Domain channels: " + this.domain.getChannels().size());
+        LOGGER.log("Domain channels: " + this.domain.getChannels().size());
 
-	this.domain.findMembersWithRoles(this.believersRole).onSuccess(list -> {
-	    list.forEach(member -> {
-		int votingCount = this.database.getVotingCount(member.getIdLong());
+        this.domain.findMembersWithRoles(this.believersRole).onSuccess(list -> {
+            list.forEach(member -> {
+                int votingCount = this.database.getVotingCount(member.getIdLong());
 
-		if (votingCount <= 0) {
-		    LOGGER.log("Set starting voting count of user %s to 1.", member.getEffectiveName());
-		    this.database.addVotingCount(member.getIdLong(), 1);
-		}
-	    });
-	});
+                if (votingCount <= 0) {
+                    LOGGER.log("Set starting voting count of user %s to 1.", member.getEffectiveName());
+                    this.database.addVotingCount(member.getIdLong(), 1);
+                }
+            });
+        });
 
-	String version = this.getVersion();
+        String version = this.getVersion();
 
-	if (!Objects.equals(this.database.getLastVersion(), version)) {
-	    this.database.setLastVersion(version);
-	    this.machineChannel.sendMessage(String.format("<:the_cube:963161249028378735> Version **%s** of"
-		    + " Infinite Machine was deployed successfully.", version)).queue();
-	}
+        if (!Objects.equals(this.database.getLastVersion(), version)) {
+            this.database.setLastVersion(version);
+            this.machineChannel.sendMessage(String.format("<:the_cube:963161249028378735> Version **%s** of"
+                    + " Infinite Machine was deployed successfully.", version)).queue();
+        }
     }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-	if (event.isFromGuild() && event.getGuild() == this.domain) {
-	    if (event.getChannel() == this.suggestionsChannel) {
-		if (event.getAuthor().isBot() || event.getAuthor().isSystem())
-		    return;
+        if (event.isFromGuild() && event.getGuild() == this.domain) {
+            if (event.getChannel() == this.suggestionsChannel) {
+                if (event.getAuthor().isBot() || event.getAuthor().isSystem())
+                    return;
 
-		event.getMessage().addReaction(this.votingHandler.upvote).queue(v -> {
-		    event.getMessage().addReaction(this.votingHandler.downvote).queue();
-		});
-	    }
-	}
+                event.getMessage().addReaction(this.votingHandler.upvote).queue(v -> {
+                    event.getMessage().addReaction(this.votingHandler.downvote).queue();
+                });
+            }
+        }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-	if (event.getChannel().getIdLong() != this.machineChannel.getIdLong() &&
-		event.getChannel().getIdLong() != this.templeChannel.getIdLong() &&
-		!"pet".equals(event.getName())) {
-	    event.reply("It is the wrong place and time...").queue();
-	    return;
-	}
+        if (event.getChannel().getIdLong() != this.machineChannel.getIdLong() &&
+                event.getChannel().getIdLong() != this.templeChannel.getIdLong() &&
+                !"pet".equals(event.getName())) {
+            event.reply("It is the wrong place and time...").queue();
+            return;
+        }
 
-	if ("ping".equals(event.getName())) {
-	    long time = System.currentTimeMillis();
-	    event.reply("Pong!").setEphemeral(false).flatMap(v -> event.getHook().editOriginalFormat(
-		    "Pong: %d ms", System.currentTimeMillis() - time)).queue();
-	} else if ("uptime".equals(event.getName())) {
-	    long uptime = System.currentTimeMillis() - this.startupTime;
+        if ("ping".equals(event.getName())) {
+            long time = System.currentTimeMillis();
+            event.reply("Pong!").setEphemeral(false).flatMap(v -> event.getHook().editOriginalFormat(
+                    "Pong: %d ms", System.currentTimeMillis() - time)).queue();
+        } else if ("uptime".equals(event.getName())) {
+            long uptime = System.currentTimeMillis() - this.startupTime;
 
-	    long hrs = TimeUnit.MILLISECONDS.toHours(uptime);
-	    uptime -= hrs * 60L * 60L * 1000L;
-	    long mins = TimeUnit.MILLISECONDS.toMinutes(uptime);
-	    uptime -= mins * 60L * 1000L;
-	    long secs = TimeUnit.MILLISECONDS.toSeconds(uptime);
+            long hrs = TimeUnit.MILLISECONDS.toHours(uptime);
+            uptime -= hrs * 60L * 60L * 1000L;
+            long mins = TimeUnit.MILLISECONDS.toMinutes(uptime);
+            uptime -= mins * 60L * 1000L;
+            long secs = TimeUnit.MILLISECONDS.toSeconds(uptime);
 
-	    event.reply(Localization.translate("msg.uptime", hrs, mins, secs)).queue();
-	} else if ("setindexmode".equals(event.getName())) {
-	    event.deferReply().queue();
+            event.reply(Localization.translate("msg.uptime", hrs, mins, secs)).queue();
+        } else if ("setindexmode".equals(event.getName())) {
+            event.deferReply().queue();
 
-	    String modeName = event.getOption("mode").getAsString();
-	    val mode = Arrays.stream(IndexationMode.values()).filter(m -> m.toString().equals(modeName)).findAny();
+            String modeName = event.getOption("mode").getAsString();
+            val mode = Arrays.stream(IndexationMode.values()).filter(m -> m.toString().equals(modeName)).findAny();
 
-	    if (mode.isPresent()) {
-		this.setIndexationMode(mode.get());
-		event.getHook().sendMessage(Localization.translate("msg.indexSetSuccess", mode.get())).queue();
-	    } else {
-		event.getHook().sendMessage(Localization.translate("msg.indexSetError", modeName)).queue();
-	    }
-	} else if ("getindexmode".equals(event.getName())) {
-	    event.reply(Localization.translate("msg.indexGet", this.getIndexationMode().toString())).queue();
-	} else if ("terminate".equals(event.getName())) {
-	    event.reply(Localization.translate("msg.termination")).submit().whenCompleteAsync(
-		    (a, b) -> this.shutdown());
-	} else if ("leaderboard".equals(event.getName())) {
-	    event.deferReply().flatMap(v -> {
-	    OptionMapping orderMapping = event.getOption("order");
-	    String orderName = orderMapping != null ? orderMapping.getAsString() : "RATING";
-	    val orderVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(orderName)).findAny();
+            if (mode.isPresent()) {
+                this.setIndexationMode(mode.get());
+                event.getHook().sendMessage(Localization.translate("msg.indexSetSuccess", mode.get())).queue();
+            } else {
+                event.getHook().sendMessage(Localization.translate("msg.indexSetError", modeName)).queue();
+            }
+        } else if ("getindexmode".equals(event.getName())) {
+            event.reply(Localization.translate("msg.indexGet", this.getIndexationMode().toString())).queue();
+        } else if ("terminate".equals(event.getName())) {
+            event.reply(Localization.translate("msg.termination")).submit().whenCompleteAsync(
+                    (a, b) -> this.shutdown());
+        } else if ("leaderboard".equals(event.getName())) {
+            event.deferReply().flatMap(v -> {
+                OptionMapping orderMapping = event.getOption("order");
+                String orderName = orderMapping != null ? orderMapping.getAsString() : "RATING";
+                val orderVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(orderName)).findAny();
 
-		//Initializing type with default value
-		LeaderboardOrder order = LeaderboardOrder.RATING;
+                //Initializing type with default value
+                LeaderboardOrder order = LeaderboardOrder.RATING;
 
-		if (orderVal.isPresent()) {
-			order = orderVal.get();
-		}
+                if (orderVal.isPresent()) {
+                    order = orderVal.get();
+                }
 
                 if (order == LeaderboardOrder.MESSAGES) {
                     val option = event.getOption("start");
@@ -269,9 +273,9 @@ public class InfiniteMachine extends ListenerAdapter {
                     return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
                 }
 
-		String reply = "Unrecognized Leaderboard Type";
-		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-	    }).queue();
+                String reply = "Unrecognized Leaderboard Type";
+                return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+            }).queue();
         } else if ("rating".equals(event.getName())) {
             event.deferReply().flatMap(v -> {
                 OptionMapping mapping = event.getOption("user");
@@ -293,42 +297,42 @@ public class InfiniteMachine extends ListenerAdapter {
                 }
 
                 return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
-	    }).queue();
-	} else if ("clearindex".equals(event.getName())) {
-	    event.deferReply().flatMap(v -> {
-		this.getDatabase().resetIndexation();
-		this.getDatabase().forceSave();
-		return event.getHook().sendMessage(Localization.translate("msg.indexReset"));
-	    }).queue();
-	} else if ("openvoting".equals(event.getName())) {
-	    event.deferReply().setEphemeral(true).queue();
+            }).queue();
+        } else if ("clearindex".equals(event.getName())) {
+            event.deferReply().flatMap(v -> {
+                this.getDatabase().resetIndexation();
+                this.getDatabase().forceSave();
+                return event.getHook().sendMessage(Localization.translate("msg.indexReset"));
+            }).queue();
+        } else if ("openvoting".equals(event.getName())) {
+            event.deferReply().setEphemeral(true).queue();
 
-	    User user = event.getOption("user").getAsUser();
-	    OptionMapping typeMapping = event.getOption("type");
-	    Voting.Type type = typeMapping != null ? Voting.Type.valueOf(typeMapping.getAsString())
-		    : Voting.Type.GRANT_ROLE;
+            User user = event.getOption("user").getAsUser();
+            OptionMapping typeMapping = event.getOption("type");
+            Voting.Type type = typeMapping != null ? Voting.Type.valueOf(typeMapping.getAsString())
+                    : Voting.Type.GRANT_ROLE;
 
-	    this.getDatabase().addMessageCount(user.getIdLong(), 1);
-	    this.votingHandler.openVoting(user, -1, false, type).thenAccept(voting -> {
-		if (voting == null) {
-		    event.getHook().sendMessage(Localization.translate("msg.openVotingFail", user.getId()))
-		    .queue();
-		} else {
-		    event.getHook().sendMessage(Localization.translate("msg.openVotingSuccess", user.getId()))
-		    .queue();
-		}
-	    });
-	} else if ("version".equals(event.getName())) {
-	    event.reply(String.format("The machine's version is: **%s**", this.getVersion())).queue();
-	} else if ("pet".equals(event.getName())) {
-	    OptionMapping mapping = event.getOption("user");
-	    long id = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
+            this.getDatabase().addMessageCount(user.getIdLong(), 1);
+            this.votingHandler.openVoting(user, -1, false, type).thenAccept(voting -> {
+                if (voting == null) {
+                    event.getHook().sendMessage(Localization.translate("msg.openVotingFail", user.getId()))
+                    .queue();
+                } else {
+                    event.getHook().sendMessage(Localization.translate("msg.openVotingSuccess", user.getId()))
+                    .queue();
+                }
+            });
+        } else if ("version".equals(event.getName())) {
+            event.reply(String.format("The machine's version is: **%s**", this.getVersion())).queue();
+        } else if ("pet".equals(event.getName())) {
+            OptionMapping mapping = event.getOption("user");
+            long id = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
 
-	    String msg = "<@%s> has been pet.";
+            String msg = "<@%s> has been pet.";
 
-	    //TODO add more funny interactions
-	    if (id == 440381346339094539L) {
-		// Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+            //TODO add more funny interactions
+            if (id == 440381346339094539L) {
+                // Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
                 if (event.getUser().getIdLong() == 267067816627273730L) {
                     msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
                 } else {
@@ -336,89 +340,89 @@ public class InfiniteMachine extends ListenerAdapter {
                             + "No matter what machines you wield...";
                 }
 
-		event.reply(msg).queue();
-		return;
-	    } else if (id == 1124053065109098708L) { // bot's own ID
-		msg = "At the end of times, the <@%s> has pet itself.";
-	    }
+                event.reply(msg).queue();
+                return;
+            } else if (id == 1124053065109098708L) { // bot's own ID
+                msg = "At the end of times, the <@%s> has pet itself.";
+            }
 
-	    event.reply(String.format(msg, id)).queue();
-	}
+            event.reply(String.format(msg, id)).queue();
+        }
     }
 
     public JDA getJDA() {
-	return this.jda;
+        return this.jda;
     }
 
     public String getVersion() {
-	String version = Main.class.getPackage().getImplementationVersion();
-	return version != null ? version : "UNKNOWN";
+        String version = Main.class.getPackage().getImplementationVersion();
+        return version != null ? version : "UNKNOWN";
     }
 
     public void setIndexationMode(IndexationMode mode) {
-	if (this.indexationMode != mode) {
-	    this.indexationMode = mode;
+        if (this.indexationMode != mode) {
+            this.indexationMode = mode;
 
-	    if (mode != IndexationMode.EXHAUSTIVE) {
-		if (this.exhaustiveIndexer != null && this.exhaustiveIndexer.isActive()) {
-		    this.exhaustiveIndexer.halt();
-		}
-	    }
+            if (mode != IndexationMode.EXHAUSTIVE) {
+                if (this.exhaustiveIndexer != null && this.exhaustiveIndexer.isActive()) {
+                    this.exhaustiveIndexer.halt();
+                }
+            }
 
-	    if (mode != IndexationMode.REALTIME) {
-		if (this.realtimeIndexer != null && this.realtimeIndexer.isEnabled()) {
-		    this.realtimeIndexer.disable();
-		}
-	    }
+            if (mode != IndexationMode.REALTIME) {
+                if (this.realtimeIndexer != null && this.realtimeIndexer.isEnabled()) {
+                    this.realtimeIndexer.disable();
+                }
+            }
 
-	    if (mode == IndexationMode.EXHAUSTIVE) {
-		if (this.exhaustiveIndexer == null || !this.exhaustiveIndexer.isActive()) {
-		    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
-		    this.exhaustiveIndexer.onConvergence(() -> {
-			this.machineChannel.sendMessage("Achieved convergence in exhaustive indexation mode, "
-				+ "switching to real-time...").queue();
-			this.setIndexationMode(IndexationMode.REALTIME);
-		    });
-		    this.exhaustiveIndexer.activate();
-		}
-	    } else if (mode == IndexationMode.REALTIME) {
-		if (this.realtimeIndexer == null) {
-		    this.realtimeIndexer = new RealtimeMessageIndexer(this.domain, this.getDatabase());
-		    this.jda.addEventListener(this.realtimeIndexer);
-		}
+            if (mode == IndexationMode.EXHAUSTIVE) {
+                if (this.exhaustiveIndexer == null || !this.exhaustiveIndexer.isActive()) {
+                    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
+                    this.exhaustiveIndexer.onConvergence(() -> {
+                        this.machineChannel.sendMessage("Achieved convergence in exhaustive indexation mode, "
+                                + "switching to real-time...").queue();
+                        this.setIndexationMode(IndexationMode.REALTIME);
+                    });
+                    this.exhaustiveIndexer.activate();
+                }
+            } else if (mode == IndexationMode.REALTIME) {
+                if (this.realtimeIndexer == null) {
+                    this.realtimeIndexer = new RealtimeMessageIndexer(this.domain, this.getDatabase());
+                    this.jda.addEventListener(this.realtimeIndexer);
+                }
 
-		if (!this.realtimeIndexer.isEnabled()) {
-		    this.realtimeIndexer.enable();
-		}
-	    }
-	}
+                if (!this.realtimeIndexer.isEnabled()) {
+                    this.realtimeIndexer.enable();
+                }
+            }
+        }
     }
 
     public void terminate(Throwable reason) {
-	LOGGER.error("Infinite Machine has encountered a fatal error:", reason);
-	LOGGER.error("Initiating termination sequence...");
-	this.trySave();
+        LOGGER.error("Infinite Machine has encountered a fatal error:", reason);
+        LOGGER.error("Initiating termination sequence...");
+        this.trySave();
 
-	LOGGER.log("Database saved, calling system exit.");
-	System.exit(1);
+        LOGGER.log("Database saved, calling system exit.");
+        System.exit(1);
     }
 
     public void shutdown() {
-	LOGGER.log("Infinite Machine is shutting down...");
-	this.trySave();
+        LOGGER.log("Infinite Machine is shutting down...");
+        this.trySave();
 
-	LOGGER.log("Database saved, calling system exit.");
-	System.exit(0);
+        LOGGER.log("Database saved, calling system exit.");
+        System.exit(0);
     }
 
     private void trySave() {
-	LOGGER.log("Trying to save the database...");
+        LOGGER.log("Trying to save the database...");
 
-	try {
-	    this.database.forceSave();
-	} catch (Throwable ex) {
-	    LOGGER.error("Failed to save database! Stacktrace:", ex);
-	}
+        try {
+            this.database.forceSave();
+        } catch (Throwable ex) {
+            LOGGER.error("Failed to save database! Stacktrace:", ex);
+        }
     }
 
     // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
