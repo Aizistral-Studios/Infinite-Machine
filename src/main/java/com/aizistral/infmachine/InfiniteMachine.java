@@ -88,7 +88,7 @@ public class InfiniteMachine extends ListenerAdapter {
 		Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
 		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
-		.addOption(OptionType.STRING, "type", Localization.translate("cmd.leaderboard.order",
+		.addOption(OptionType.STRING, "order", Localization.translate("cmd.leaderboard.order",
 			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
 			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
@@ -212,56 +212,60 @@ public class InfiniteMachine extends ListenerAdapter {
 		    (a, b) -> this.shutdown());
 	} else if ("leaderboard".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
-	    OptionMapping typeMapping = event.getOption("type");
-	    String typeName = typeMapping != null ? typeMapping.getAsString() : "RATING";
-	    val typeVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(typeName)).findAny();
+	    OptionMapping orderMapping = event.getOption("order");
+	    String orderName = orderMapping != null ? orderMapping.getAsString() : "RATING";
+	    val orderVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(orderName)).findAny();
 
 		//Initializing type with default value
-		LeaderboardOrder type = LeaderboardOrder.RATING;
+		LeaderboardOrder order = LeaderboardOrder.RATING;
 
-		if (typeVal.isPresent()) {
-			type = typeVal.get();
+		if (orderVal.isPresent()) {
+			order = orderVal.get();
 		}
 
-		if (type == LeaderboardOrder.MESSAGES) {
-			val option = event.getOption("start");
-			int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+                if (order == LeaderboardOrder.MESSAGES) {
+                    val option = event.getOption("start");
+                    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
-		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
-		    String reply = "";
+                    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, order, start, 10);
+                    String reply = "";
 
-			if (start == 1) {
-				reply += Localization.translate("msg.leaderboardHeader") + "\n";
-			} else {
-				reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
-			}
+                    if (start == 1) {
+                        reply += Localization.translate("msg.leaderboardHeader") + "\n";
+                    } else {
+                        reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+                    }
 
-			for (int i = 0; i < senders.size(); i++) {
-				val leaderboardEntry = senders.get(i);
-				reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getMessageCount(), leaderboardEntry.getRating());
-			}
+                    for (int i = 0; i < senders.size(); i++) {
+                        val leaderboardEntry = senders.get(i);
+                        reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start,
+                                leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
+                                leaderboardEntry.getMessageCount(), leaderboardEntry.getRating());
+                    }
 
-			return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-		} else if (type == LeaderboardOrder.RATING) {
-		    val option = event.getOption("start");
-		    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+                    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+                } else if (order == LeaderboardOrder.RATING) {
+                    val option = event.getOption("start");
+                    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
-		    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, type, start, 10);
-		    String reply = "";
+                    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, order, start, 10);
+                    String reply = "";
 
-		    if (start == 1) {
-			    reply += Localization.translate("msg.leaderboardHeader") + "\n";
-		    } else {
-			    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
-		    }
+                    if (start == 1) {
+                        reply += Localization.translate("msg.leaderboardHeader") + "\n";
+                    } else {
+                        reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+                    }
 
-		    for (int i = 0; i < senders.size(); i++) {
-			    val leaderboardEntry = senders.get(i);
-			    reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start, leaderboardEntry.getUserName(), leaderboardEntry.getUserID(), leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
-		    }
+                    for (int i = 0; i < senders.size(); i++) {
+                        val leaderboardEntry = senders.get(i);
+                        reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start,
+                                leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
+                                leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
+                    }
 
-		    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
-	    }
+                    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+                }
 
 		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
