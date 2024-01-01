@@ -2,6 +2,7 @@ package com.aizistral.infmachine.config;
 
 import java.nio.file.Paths;
 
+import com.aizistral.infmachine.data.BelieverMethod;
 import com.aizistral.infmachine.data.IndexationMode;
 
 import lombok.AccessLevel;
@@ -66,6 +67,24 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         try {
             this.readLock.lock();
             return this.getData().requiredMessagesForBeliever;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    public long getRequiredRatingForBeliever() {
+        try {
+            this.readLock.lock();
+            return this.getData().requiredRatingForBeliever;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    public BelieverMethod getBelieverMethod() {
+        try {
+            this.readLock.lock();
+            return this.getData().believerMethod;
         } finally {
             this.readLock.unlock();
         }
@@ -205,6 +224,8 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         private long votingTime = 60_000L;
         private long minMessageLength = 0;
         private long requiredMessagesForBeliever = 300;
+        private long requiredRatingForBeliever = 1500;
+        private BelieverMethod believerMethod = BelieverMethod.RATING;
         private long domainID = 757941072449241128L;
         private long templeChannelID = 953374742457499659L;
         private long machineChannelID = 1124278424698105940L;

@@ -3,9 +3,7 @@ package com.aizistral.infmachine.database;
 import java.util.List;
 import java.util.Set;
 
-import com.aizistral.infmachine.data.ChannelType;
-import com.aizistral.infmachine.data.IndexationMode;
-import com.aizistral.infmachine.data.Voting;
+import com.aizistral.infmachine.data.*;
 import com.aizistral.infmachine.utils.Triple;
 import com.aizistral.infmachine.utils.Tuple;
 
@@ -30,6 +28,12 @@ public interface MachineDatabase {
 
     public int addMessageCount(long userID, int count);
 
+    public int getMessageRating(long userID);
+
+    public int setMessageRating(long userID, int points);
+
+    public int addMessageRating(long userID, int points);
+
     public boolean hasIndexedMessages(ChannelType type, long channelID);
 
     public void addIndexedMessage(ChannelType type, long channelID, long messageID);
@@ -38,9 +42,9 @@ public interface MachineDatabase {
 
     public void resetIndexation();
 
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit);
+    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit);
 
-    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID);
+    public UserRating getSenderRating(JDA jda, Guild guild, long userID);
 
     public String getLastVersion();
 

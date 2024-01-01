@@ -2,7 +2,6 @@ package com.aizistral.infmachine.database.local;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,14 +11,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
-import org.jetbrains.annotations.Nullable;
+import com.aizistral.infmachine.data.*;
 
 import com.aizistral.infmachine.config.AsyncJSONConfig;
-import com.aizistral.infmachine.data.ChannelType;
-import com.aizistral.infmachine.data.IndexationMode;
-import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
@@ -30,10 +25,6 @@ import lombok.NoArgsConstructor;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
-import net.dv8tion.jda.api.requests.ErrorResponse;
 
 public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements MachineDatabase {
     private static final StandardLogger LOGGER = new StandardLogger("JSONDatabase");
@@ -133,6 +124,40 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
+    public int getMessageRating(long userID) {
+        try {
+            this.readLock.lock();
+            return this.getData().messageRating.getOrDefault(userID, 0);
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    @Override
+    public int setMessageRating(long userID, int points) {
+        try {
+            this.writeLock.lock();
+            this.getData().messageRating.put(userID, points);
+            this.needsSaving.set(true);
+            return points;
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
+    public int addMessageRating(long userID, int points) {
+        try {
+            this.writeLock.lock();
+            int newScore = this.getMessageRating(userID) + points;
+            this.setMessageRating(userID, newScore);
+            return newScore;
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
     public boolean hasIndexedMessages(ChannelType type, long channelID) {
         return this.getIndexedMessage(type, channelID, 0) >= 0;
     }
@@ -184,6 +209,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             this.getData().channelIndexTails.clear();
             this.getData().threadIndexTails.clear();
             this.getData().messageCounts.clear();
+            this.getData().messageRating.clear();
             this.needsSaving.set(true);
         } finally {
             this.writeLock.unlock();
@@ -208,75 +234,113 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     //    }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List<Triple<Long, String, Integer>> getTopMessageSenders(JDA jda, Guild guild, int start, int limit) {
+    public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit) {
         try {
             this.readLock.lock();
-            long time = System.currentTimeMillis();
-            List<Entry<Long, Integer>> allSenders = new ArrayList<>(this.getData().messageCounts.entrySet());
-            List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
-            allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
+            List<LeaderboardEntry> leaderboard = new ArrayList<>();
 
-            List<CompletableFuture<String>> futuresStr = new ArrayList<>();
-            List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
+            switch (order) {
+            case MESSAGES:
+                List<Triple<Long, String, Integer>> messageList = this.getTopUsers(jda, guild, start, limit,
+                        this.getData().messageCounts);
 
-            start -= 1;
-            int boardSize = Math.min(limit, allSenders.size() - start);
+                for (val entry : messageList) {
+                    leaderboard.add(new LeaderboardEntry(entry.getA(), entry.getB(), entry.getC(),
+                            this.getData().messageRating.getOrDefault(entry.getA(), 0)));
+                }
 
-            LOGGER.debug("Board size: %s", boardSize);
+                return leaderboard;
+            case RATING:
+                List<Triple<Long, String, Integer>> ratingList = this.getTopUsers(jda, guild, start, limit,
+                        this.getData().messageRating);
 
-            for (int i = start; i < boardSize + (start); i++) {
-                Entry<Long, Integer> entry = allSenders.get(i);
-                int pos = i - start;
+                for (val entry : ratingList) {
+                    leaderboard.add(new LeaderboardEntry(entry.getA(), entry.getB(),
+                            this.getData().messageCounts.getOrDefault(entry.getA(), 0), entry.getC()));
+                }
 
-                val futureStr = new CompletableFuture<String>();
-                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s,
-                        entry.getValue())));
+                return leaderboard;
 
-                futuresStr.add(futureStr);
-                futuresVoid.add(futureVoid);
-
-                guild.retrieveMemberById(entry.getKey()).queue(member -> {
-                    futuresStr.get(pos).complete(member.getEffectiveName());
-                }, ex -> {
-                    jda.retrieveUserById(entry.getKey()).queue(user -> {
-                        futuresStr.get(pos).complete(user.getEffectiveName());
-                    }, ex2 -> {
-                        futuresStr.get(pos).complete("Unknown");
-                    });
-                });
+            default:
+                throw new IllegalArgumentException("Unhandled leaderboard order: " + order);
             }
-
-            LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
-
-            time = System.currentTimeMillis();
-            futuresVoid.forEach(CompletableFuture::join);
-            LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
-
-            topSenders.sort((a, b) -> {
-                return b.getC() - a.getC();
-            });
-
-            return topSenders;
         } finally {
             this.readLock.unlock();
         }
     }
 
+    public List<Triple<Long, String, Integer>> getTopUsers(JDA jda, Guild guild, int start, int limit, Map<Long, Integer> userMap) {
+        long time = System.currentTimeMillis();
+        List<Entry<Long, Integer>> allSenders = new ArrayList<>(userMap.entrySet());
+        List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
+        allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
+
+        List<CompletableFuture<String>> futuresStr = new ArrayList<>();
+        List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
+
+        start -= 1;
+        int boardSize = Math.min(limit, allSenders.size() - start);
+
+        LOGGER.debug("Board size: %s", boardSize);
+
+        for (int i = start; i < boardSize + (start); i++) {
+            Entry<Long, Integer> entry = allSenders.get(i);
+            int pos = i - start;
+
+            val futureStr = new CompletableFuture<String>();
+            val futureVoid = futureStr
+                    .thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s, entry.getValue())));
+
+            futuresStr.add(futureStr);
+            futuresVoid.add(futureVoid);
+
+            guild.retrieveMemberById(entry.getKey()).queue(member -> {
+                futuresStr.get(pos).complete(member.getEffectiveName());
+            }, ex -> {
+                jda.retrieveUserById(entry.getKey()).queue(user -> {
+                    futuresStr.get(pos).complete(user.getEffectiveName());
+                }, ex2 -> {
+                    futuresStr.get(pos).complete("Unknown");
+                });
+            });
+        }
+
+        LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+        time = System.currentTimeMillis();
+        futuresVoid.forEach(CompletableFuture::join);
+        LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+        topSenders.sort((a, b) -> {
+            return b.getC() - a.getC();
+        });
+
+        return topSenders;
+    }
+
     @Override
-    public Tuple<Integer, Integer> getSenderRating(JDA jda, Guild guild, long userID) {
+    public UserRating getSenderRating(JDA jda, Guild guild, long userID) {
         try {
             this.readLock.lock();
-            int rating = 1;
-            int count = this.getMessageCount(userID);
+            int msgsPosition = 1;
+            int ratingPosition = 1;
+
+            int msgs = this.getMessageCount(userID);
+            int rating = this.getMessageRating(userID);
 
             for (val entry : this.getData().messageCounts.entrySet()) {
-                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > count) {
-                    rating++;
+                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > msgs) {
+                    msgsPosition++;
                 }
             }
 
-            return new Tuple<>(rating, count);
+            for (val entry : this.getData().messageRating.entrySet()) {
+                if (entry.getKey().longValue() != userID && entry.getValue().intValue() > rating) {
+                    ratingPosition++;
+                }
+            }
+
+            return new UserRating(userID, msgs, rating, msgsPosition, ratingPosition);
         } finally {
             this.readLock.unlock();
         }
@@ -306,6 +370,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private final HashMap<Long, Integer> messageCounts = new HashMap<>();
+        private final HashMap<Long, Integer> messageRating = new HashMap<>();
         private final HashMap<Long, Integer> votingCounts = new HashMap<>();
         private final HashMap<Long, List<Long>> channelIndexTails = new HashMap<>();
         private final HashMap<Long, List<Long>> threadIndexTails = new HashMap<>();

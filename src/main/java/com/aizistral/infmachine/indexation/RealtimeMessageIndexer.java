@@ -11,10 +11,7 @@ import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -64,7 +61,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
             }
             if (!user.isBot() && !user.isSystem()) {
                 if (user.getIdLong() != Utils.DELETED_USER_ID) {
-                    if(event.getMessage().getContentRaw().length() >= config.getMinMessageLength()){
+                    if (event.getMessage().getContentRaw().length() >= this.config.getMinMessageLength()) {
                         this.onNewMessage(user, event.getMessage());
                     }
                 }
@@ -74,7 +71,24 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        if (count >= config.getRequiredMessagesForBeliever()) {
+        int rating = this.database.addMessageRating(user.getIdLong(), InfiniteMachine.evaluateMessage(message));
+        long requiredMessages = 0;
+        long requiredRating = 0;
+
+        switch (this.config.getBelieverMethod()) {
+            case MESSAGES:
+                requiredMessages = this.config.getRequiredMessagesForBeliever();
+                break;
+            case RATING:
+                requiredRating = this.config.getRequiredRatingForBeliever();
+                break;
+            case MESSAGES_AND_RATING:
+                requiredMessages = this.config.getRequiredMessagesForBeliever();
+                requiredRating = this.config.getRequiredRatingForBeliever();
+                break;
+        }
+
+        if (count >= requiredMessages && rating >= requiredRating) {
             this.guild.retrieveMember(user).queue(member -> {
                 for (Role role : member.getRoles()) {
                     if (this.unvotableRoles.contains(role))

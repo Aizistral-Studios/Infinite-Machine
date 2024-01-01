@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.IndexationMode;
+import com.aizistral.infmachine.data.LeaderboardOrder;
+import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.database.local.JSONDatabase;
@@ -22,9 +24,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -88,6 +88,9 @@ public class InfiniteMachine extends ListenerAdapter {
 		Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
 		.setDefaultPermissions(DefaultMemberPermissions.DISABLED),
 		Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
+		.addOption(OptionType.STRING, "order", Localization.translate("cmd.leaderboard.order",
+			Arrays.stream(LeaderboardOrder.values()).map(LeaderboardOrder::toString)
+			.collect(Collectors.joining("/"))), false)
 		.addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
 		Commands.slash("rating", Localization.translate("cmd.rating.desc"))
 		.addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
@@ -209,44 +212,87 @@ public class InfiniteMachine extends ListenerAdapter {
 		    (a, b) -> this.shutdown());
 	} else if ("leaderboard".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
-		val option = event.getOption("start");
-		int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+	    OptionMapping orderMapping = event.getOption("order");
+	    String orderName = orderMapping != null ? orderMapping.getAsString() : "RATING";
+	    val orderVal = Arrays.stream(LeaderboardOrder.values()).filter(m -> m.toString().equals(orderName)).findAny();
 
-		val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, start, 10);
-		String reply = "";
+		//Initializing type with default value
+		LeaderboardOrder order = LeaderboardOrder.RATING;
 
-		if (start == 1) {
-		    reply += Localization.translate("msg.leaderboardHeader") + "\n";
-		} else {
-		    reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+		if (orderVal.isPresent()) {
+			order = orderVal.get();
 		}
 
-		for (int i = 0; i < senders.size(); i++) {
-		    val triple = senders.get(i);
-		    reply += "\n" + Localization.translate("msg.leaderboardEntry", i + start, triple.getB(),
-			    triple.getA(), triple.getC());
-		}
+                if (order == LeaderboardOrder.MESSAGES) {
+                    val option = event.getOption("start");
+                    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
 
+                    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, order, start, 10);
+                    String reply = "";
+
+                    if (start == 1) {
+                        reply += Localization.translate("msg.leaderboardHeader") + "\n";
+                    } else {
+                        reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+                    }
+
+                    for (int i = 0; i < senders.size(); i++) {
+                        val leaderboardEntry = senders.get(i);
+                        reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start,
+                                leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
+                                leaderboardEntry.getMessageCountFormatted(),
+                                leaderboardEntry.getDisplayRatingFormatted());
+                    }
+
+                    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+                } else if (order == LeaderboardOrder.RATING) {
+                    val option = event.getOption("start");
+                    int start = option != null ? Math.max(option.getAsInt(), 1) : 1;
+
+                    val senders = this.getDatabase().getTopMessageSenders(this.jda, this.domain, order, start, 10);
+                    String reply = "";
+
+                    if (start == 1) {
+                        reply += Localization.translate("msg.leaderboardHeader") + "\n";
+                    } else {
+                        reply += Localization.translate("msg.leaderboardHeaderAlt", start, start + 9) + "\n";
+                    }
+
+                    for (int i = 0; i < senders.size(); i++) {
+                        val leaderboardEntry = senders.get(i);
+                        reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start,
+                                leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
+                                leaderboardEntry.getDisplayRatingFormatted(),
+                                leaderboardEntry.getMessageCountFormatted());
+                    }
+
+                    return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
+                }
+
+		String reply = "Unrecognized Leaderboard Type";
 		return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
-	} else if ("rating".equals(event.getName())) {
-	    event.deferReply().flatMap(v -> {
-		OptionMapping mapping = event.getOption("user");
-		User user = null;
-		String message = null;
+        } else if ("rating".equals(event.getName())) {
+            event.deferReply().flatMap(v -> {
+                OptionMapping mapping = event.getOption("user");
+                User user = null;
+                String message = null;
 
-		if (mapping != null && mapping.getAsUser() != event.getUser()) {
-		    user = mapping.getAsUser();
-		    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-		    message = Localization.translate("msg.rating", user.getIdLong(), rating.getA(),
-			    rating.getB());
-		} else {
-		    user = event.getUser();
-		    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-		    message = Localization.translate("msg.ratingOwn", rating.getA(), rating.getB());
-		}
+                if (mapping != null && mapping.getAsUser() != event.getUser()) {
+                    user = mapping.getAsUser();
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
+                    message = Localization.translate("msg.rating", user.getIdLong(), rating.getPositionByRating(),
+                            rating.getDisplayRatingFormatted(), rating.getPositionByMessages(),
+                            rating.getMessageCountFormatted());
+                } else {
+                    user = event.getUser();
+                    val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
+                    message = Localization.translate("msg.ratingOwn", rating.getPositionByRating(),
+                            rating.getDisplayRatingFormatted(), rating.getPositionByMessages(),
+                            rating.getMessageCountFormatted());
+                }
 
-		return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
+                return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
 	    }).queue();
 	} else if ("clearindex".equals(event.getName())) {
 	    event.deferReply().flatMap(v -> {
@@ -280,14 +326,15 @@ public class InfiniteMachine extends ListenerAdapter {
 
 	    String msg = "<@%s> has been pet.";
 
+	    //TODO add more funny interactions
 	    if (id == 440381346339094539L) {
-			//Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
-			if(event.getUser().getIdLong() == 267067816627273730L){
-				msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
-			}else{
-				msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
-						+ "No matter what machines you wield...";
-			}
+		// Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
+                if (event.getUser().getIdLong() == 267067816627273730L) {
+                    msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+                } else {
+                    msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
+                            + "No matter what machines you wield...";
+                }
 
 		event.reply(msg).queue();
 		return;
@@ -372,6 +419,29 @@ public class InfiniteMachine extends ListenerAdapter {
 	} catch (Throwable ex) {
 	    LOGGER.error("Failed to save database! Stacktrace:", ex);
 	}
+    }
+
+    // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
+    public static int evaluateMessage(Message messageRaw) {
+        // Exclude slash commands from rating
+        if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
+            return 0;
+
+        // linkLengthValueInChars describes the flat amount of chars that a Link will
+        // contribute to a message Rating
+        int linkLengthValueInChars = 25;
+
+        ProcessedMessage message = new ProcessedMessage(messageRaw);
+        int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
+        int emojiContributionToLength = message.getEmojiCount();
+        int length = message.getMessage().length() + linkContributionToLength + emojiContributionToLength;
+
+        return length * length;
+    }
+
+    public static int getDispayRating(int points) {
+        int segmentLength = 50;
+        return points / (segmentLength * segmentLength);
     }
 
 }
