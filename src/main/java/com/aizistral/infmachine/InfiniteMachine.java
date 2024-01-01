@@ -240,7 +240,8 @@ public class InfiniteMachine extends ListenerAdapter {
                         val leaderboardEntry = senders.get(i);
                         reply += "\n" + Localization.translate("msg.leaderboardEntryMessages", i + start,
                                 leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
-                                leaderboardEntry.getMessageCount(), leaderboardEntry.getRating());
+                                leaderboardEntry.getMessageCountFormatted(),
+                                leaderboardEntry.getDisplayRatingFormatted());
                     }
 
                     return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
@@ -261,7 +262,8 @@ public class InfiniteMachine extends ListenerAdapter {
                         val leaderboardEntry = senders.get(i);
                         reply += "\n" + Localization.translate("msg.leaderboardEntryRating", i + start,
                                 leaderboardEntry.getUserName(), leaderboardEntry.getUserID(),
-                                leaderboardEntry.getRating(), leaderboardEntry.getMessageCount());
+                                leaderboardEntry.getDisplayRatingFormatted(),
+                                leaderboardEntry.getMessageCountFormatted());
                     }
 
                     return event.getHook().sendMessage(reply).setAllowedMentions(Collections.EMPTY_LIST);
@@ -279,13 +281,15 @@ public class InfiniteMachine extends ListenerAdapter {
                 if (mapping != null && mapping.getAsUser() != event.getUser()) {
                     user = mapping.getAsUser();
                     val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-                    message = Localization.translate("msg.rating", user.getIdLong(), rating.getPositionByMessages(),
-                            rating.getMessageCount(), rating.getPositionByRating(), rating.getRatingPoints());
+                    message = Localization.translate("msg.rating", user.getIdLong(), rating.getPositionByRating(),
+                            rating.getDisplayRatingFormatted(), rating.getPositionByMessages(),
+                            rating.getMessageCountFormatted());
                 } else {
                     user = event.getUser();
                     val rating = this.database.getSenderRating(this.jda, this.domain, user.getIdLong());
-                    message = Localization.translate("msg.ratingOwn", rating.getPositionByMessages(),
-                            rating.getMessageCount(), rating.getPositionByRating(), rating.getRatingPoints());
+                    message = Localization.translate("msg.ratingOwn", rating.getPositionByRating(),
+                            rating.getDisplayRatingFormatted(), rating.getPositionByMessages(),
+                            rating.getMessageCountFormatted());
                 }
 
                 return event.getHook().sendMessage(message).setAllowedMentions(Collections.EMPTY_LIST);
@@ -433,6 +437,11 @@ public class InfiniteMachine extends ListenerAdapter {
         int length = message.getMessage().length() + linkContributionToLength + emojiContributionToLength;
 
         return length * length;
+    }
+
+    public static int getDispayRating(int points) {
+        int segmentLength = 50;
+        return points / (segmentLength * segmentLength);
     }
 
 }

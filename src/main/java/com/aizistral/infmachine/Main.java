@@ -1,6 +1,7 @@
 package com.aizistral.infmachine;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
