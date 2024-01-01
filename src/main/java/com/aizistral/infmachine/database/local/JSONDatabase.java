@@ -237,80 +237,85 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     public List<LeaderboardEntry> getTopMessageSenders(JDA jda, Guild guild, LeaderboardOrder order, int start, int limit) {
         try {
             this.readLock.lock();
-            long time = System.currentTimeMillis();
-
-            List<LeaderboardEntry> topSenders = new ArrayList<>();
-            List<CompletableFuture<String>> futuresStr = new ArrayList<>();
-            List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
-
-            List<Entry<Long, Integer>> allSendersMessages = new ArrayList<>(this.getData().messageCounts.entrySet());
-            List<Entry<Long, Integer>> allSendersRating = new ArrayList<>(this.getData().messageRating.entrySet());
-            allSendersMessages.sort(Entry.comparingByKey(Comparator.reverseOrder()));
-            allSendersRating.sort(Entry.comparingByKey(Comparator.reverseOrder()));
-
-            List<Triple<Long, Integer, Integer>> allSenders = new ArrayList<>();
-            for (int i = 0; i < allSendersMessages.size(); i++) {
-                Entry<Long, Integer> m = allSendersMessages.get(i);
-                Entry<Long, Integer> r = allSendersRating.get(i);
-                Long userIDM = m.getKey();
-                Integer messageCount = m.getValue();
-                Long userIDR = r.getKey();
-                Integer rating = r.getValue();
-                if(!userIDM.equals(userIDR)) {
-                    LOGGER.error("ERROR: INVALID USER IDs in getTopMessageSenders");
-                }
-                allSenders.add(new Triple<>(userIDM, messageCount, rating));
-            }
-
-            start -= 1;
-            int boardSize = Math.min(limit, allSenders.size() - start);
-
-            LOGGER.debug("Board size: %s", boardSize);
-
-            for (int i = start; i < boardSize + (start); i++) {
-                Triple<Long, Integer, Integer> entry = allSenders.get(i);
-                int pos = i - start;
-
-                val futureStr = new CompletableFuture<String>();
-                val futureVoid = futureStr.thenAccept(s -> topSenders.add(new LeaderboardEntry(entry.getA(), s, entry.getB(), entry.getC())));
-
-                futuresStr.add(futureStr);
-                futuresVoid.add(futureVoid);
-
-                guild.retrieveMemberById(entry.getA()).queue(member -> {
-                    futuresStr.get(pos).complete(member.getEffectiveName());
-                }, ex -> {
-                    jda.retrieveUserById(entry.getA()).queue(user -> {
-                        futuresStr.get(pos).complete(user.getEffectiveName());
-                    }, ex2 -> {
-                        futuresStr.get(pos).complete("Unknown");
-                    });
-                });
-            }
-
-            LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
-
-            time = System.currentTimeMillis();
-            futuresVoid.forEach(CompletableFuture::join);
-            LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
+            List<LeaderboardEntry> leaderboard = new ArrayList<>();
 
             switch (order) {
-                case MESSAGES:
-                    topSenders.sort((a, b) -> {
-                        return b.getMessageCount() - a.getMessageCount();
-                    });
-                    break;
-                case RATING:
-                    topSenders.sort((a, b) -> {
-                        return b.getRating() - a.getRating();
-                    });
-                    break;
-            }
+            case MESSAGES:
+                List<Triple<Long, String, Integer>> messageList = this.getTopUsers(jda, guild, start, limit,
+                        this.getData().messageCounts);
 
-            return topSenders;
+                for (val entry : messageList) {
+                    leaderboard.add(new LeaderboardEntry(entry.getA(), entry.getB(), entry.getC(),
+                            this.getData().messageRating.getOrDefault(entry.getA(), 0)));
+                }
+
+                return leaderboard;
+            case RATING:
+                List<Triple<Long, String, Integer>> ratingList = this.getTopUsers(jda, guild, start, limit,
+                        this.getData().messageRating);
+
+                for (val entry : ratingList) {
+                    leaderboard.add(new LeaderboardEntry(entry.getA(), entry.getB(),
+                            this.getData().messageCounts.getOrDefault(entry.getA(), 0), entry.getC()));
+                }
+
+                return leaderboard;
+
+            default:
+                throw new IllegalArgumentException("Unhandled leaderboard order: " + order);
+            }
         } finally {
             this.readLock.unlock();
         }
+    }
+
+    public List<Triple<Long, String, Integer>> getTopUsers(JDA jda, Guild guild, int start, int limit, Map<Long, Integer> userMap) {
+        long time = System.currentTimeMillis();
+        List<Entry<Long, Integer>> allSenders = new ArrayList<>(userMap.entrySet());
+        List<Triple<Long, String, Integer>> topSenders = new ArrayList<>();
+        allSenders.sort(Entry.comparingByValue(Comparator.reverseOrder()));
+
+        List<CompletableFuture<String>> futuresStr = new ArrayList<>();
+        List<CompletableFuture<Void>> futuresVoid = new ArrayList<>();
+
+        start -= 1;
+        int boardSize = Math.min(limit, allSenders.size() - start);
+
+        LOGGER.debug("Board size: %s", boardSize);
+
+        for (int i = start; i < boardSize + (start); i++) {
+            Entry<Long, Integer> entry = allSenders.get(i);
+            int pos = i - start;
+
+            val futureStr = new CompletableFuture<String>();
+            val futureVoid = futureStr
+                    .thenAccept(s -> topSenders.add(new Triple<>(entry.getKey(), s, entry.getValue())));
+
+            futuresStr.add(futureStr);
+            futuresVoid.add(futureVoid);
+
+            guild.retrieveMemberById(entry.getKey()).queue(member -> {
+                futuresStr.get(pos).complete(member.getEffectiveName());
+            }, ex -> {
+                jda.retrieveUserById(entry.getKey()).queue(user -> {
+                    futuresStr.get(pos).complete(user.getEffectiveName());
+                }, ex2 -> {
+                    futuresStr.get(pos).complete("Unknown");
+                });
+            });
+        }
+
+        LOGGER.debug("Time to set up leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+        time = System.currentTimeMillis();
+        futuresVoid.forEach(CompletableFuture::join);
+        LOGGER.debug("Time to process leaderboard requests: %s millis", System.currentTimeMillis() - time);
+
+        topSenders.sort((a, b) -> {
+            return b.getC() - a.getC();
+        });
+
+        return topSenders;
     }
 
     @Override
