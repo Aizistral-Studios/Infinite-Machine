@@ -18,7 +18,6 @@ import com.aizistral.infmachine.config.AsyncJSONConfig;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
-import com.aizistral.infmachine.utils.Tuple;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -158,6 +157,31 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     }
 
     @Override
+    public List<Long> getCachedMessageByID(long messageID) {
+        try {
+            this.readLock.lock();
+            return this.getData().messageRatingCacheByID.getOrDefault(messageID, new ArrayList<Long>());
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    @Override
+    public List<Long> setCachedMessageByID(long messageID, long userID, long points) {
+        try {
+            this.writeLock.lock();
+            ArrayList<Long> value = new ArrayList<>();
+            value.add(userID);
+            value.add(points);
+            this.getData().messageRatingCacheByID.put(messageID, value);
+            this.needsSaving.set(true);
+            return value;
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
+    @Override
     public boolean hasIndexedMessages(ChannelType type, long channelID) {
         return this.getIndexedMessage(type, channelID, 0) >= 0;
     }
@@ -210,6 +234,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
             this.getData().threadIndexTails.clear();
             this.getData().messageCounts.clear();
             this.getData().messageRating.clear();
+            this.getData().messageRatingCacheByID.clear();
             this.needsSaving.set(true);
         } finally {
             this.writeLock.unlock();
@@ -371,6 +396,7 @@ public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements 
     static final class Data {
         private final HashMap<Long, Integer> messageCounts = new HashMap<>();
         private final HashMap<Long, Integer> messageRating = new HashMap<>();
+        private final HashMap<Long, ArrayList<Long>> messageRatingCacheByID = new HashMap<>();
         private final HashMap<Long, Integer> votingCounts = new HashMap<>();
         private final HashMap<Long, List<Long>> channelIndexTails = new HashMap<>();
         private final HashMap<Long, List<Long>> threadIndexTails = new HashMap<>();

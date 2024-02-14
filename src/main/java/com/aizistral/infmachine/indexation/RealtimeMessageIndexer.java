@@ -12,6 +12,7 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -50,8 +51,10 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        if (!this.enabled.get())
+        if (!this.enabled.get()) {
             return;
+        }
+
 
         if (event.isFromGuild() && event.getGuild() == this.guild) {
             User user = event.getAuthor();
@@ -69,9 +72,26 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
         }
     }
 
+    @Override
+    public void onMessageDelete(MessageDeleteEvent event) {
+        if (!this.enabled.get()) {
+            return;
+        }
+        long deletedMessageId = event.getMessageIdLong();
+        List<Long> cachedEntry = this.database.getCachedMessageByID(deletedMessageId);
+
+        if(!cachedEntry.isEmpty())
+        {
+            this.database.addMessageCount(cachedEntry.get(0), -1);
+            this.database.addMessageRating(cachedEntry.get(0), -Math.toIntExact(cachedEntry.get(1)));
+        }
+    }
+
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        int rating = this.database.addMessageRating(user.getIdLong(), InfiniteMachine.evaluateMessage(message));
+        int points = InfiniteMachine.evaluateMessage(message);
+        int rating = this.database.addMessageRating(user.getIdLong(), points);
+        this.database.setCachedMessageByID(message.getIdLong(), message.getAuthor().getIdLong(), points);
         long requiredMessages = 0;
         long requiredRating = 0;
 

@@ -1,11 +1,10 @@
 package com.aizistral.infmachine.database;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import com.aizistral.infmachine.data.*;
-import com.aizistral.infmachine.utils.Triple;
-import com.aizistral.infmachine.utils.Tuple;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -33,6 +32,10 @@ public interface MachineDatabase {
     public int setMessageRating(long userID, int points);
 
     public int addMessageRating(long userID, int points);
+
+    public List<Long> getCachedMessageByID(long messageID);
+
+    public List<Long> setCachedMessageByID(long messageID, long userID, long points);
 
     public boolean hasIndexedMessages(ChannelType type, long channelID);
 

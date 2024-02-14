@@ -162,8 +162,9 @@ public class ExhaustiveMessageIndexer {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
                                 if (message.getContentRaw().length() >= this.minMessageLength) {
                                     this.database.addMessageCount(author.getIdLong(), 1);
-                                    this.database.addMessageRating(author.getIdLong(),
-                                            InfiniteMachine.evaluateMessage(message));
+                                    int points = InfiniteMachine.evaluateMessage(message);
+                                    this.database.addMessageRating(author.getIdLong(), points);
+                                    this.database.setCachedMessageByID(message.getIdLong(),message.getAuthor().getIdLong(), points);
                                 }
                             }
                         }
