@@ -328,13 +328,13 @@ public class InfiniteMachine extends ListenerAdapter {
             OptionMapping mapping = event.getOption("user");
             long id = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
 
-            String msg = "<@%s> has been pet.";
+            String msg = "<@%s> has been pet <a:pat_pat_pat:1211592019680694272>";
 
             //TODO add more funny interactions
             if (id == 440381346339094539L) {
                 // Added custom bypass of arkadys anti petting code (feel free to remove if you don't agree)
                 if (event.getUser().getIdLong() == 267067816627273730L) {
-                    msg = String.format("<@%s> has been pet.\nWait how did you do that?", id);
+                    msg = String.format("<@%s> has been pet <a:pat_pat_pat:1211592019680694272>\nWait how did you do that?", id);
                 } else {
                     msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
                             + "No matter what machines you wield...";
@@ -343,7 +343,7 @@ public class InfiniteMachine extends ListenerAdapter {
                 event.reply(msg).queue();
                 return;
             } else if (id == 1124053065109098708L) { // bot's own ID
-                msg = "At the end of times, the <@%s> has pet itself.";
+                msg = "At the end of times, the <@%s> has pet itself <a:pat_pat_pat:1211592019680694272>";
             }
 
             event.reply(String.format(msg, id)).queue();
