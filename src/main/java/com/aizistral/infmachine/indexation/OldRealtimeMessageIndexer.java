@@ -89,8 +89,8 @@ public class OldRealtimeMessageIndexer extends ListenerAdapter {
 
     private void onNewMessage(User user, Message message) {
         int count = this.database.addMessageCount(user.getIdLong(), 1);
-        int points = CoreMessageIndexer.evaluateMessage(message);
-        int rating = this.database.addMessageRating(user.getIdLong(), points);
+        long points = CoreMessageIndexer.evaluateMessage(message);
+        long rating = this.database.addMessageRating(user.getIdLong(), (int) points);
         this.database.setCachedMessageByID(message.getIdLong(), message.getAuthor().getIdLong(), points);
         long requiredMessages = 0;
         long requiredRating = 0;

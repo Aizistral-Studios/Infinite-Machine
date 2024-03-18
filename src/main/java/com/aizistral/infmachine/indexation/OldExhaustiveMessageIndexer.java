@@ -162,7 +162,7 @@ public class OldExhaustiveMessageIndexer {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
                                 if (message.getContentRaw().length() >= this.minMessageLength) {
                                     this.database.addMessageCount(author.getIdLong(), 1);
-                                    int points = CoreMessageIndexer.evaluateMessage(message);
+                                    int points = (int) CoreMessageIndexer.evaluateMessage(message);
                                     this.database.addMessageRating(author.getIdLong(), points);
                                     this.database.setCachedMessageByID(message.getIdLong(),message.getAuthor().getIdLong(), points);
                                 }

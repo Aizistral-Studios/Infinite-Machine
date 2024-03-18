@@ -29,6 +29,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -354,8 +355,22 @@ public class InfiniteMachine extends ListenerAdapter {
             } else if (event.getUser().getIdLong() == 267067816627273730L) {
                 msg = "<@%s> has been masterfully pet";
             }
-
             event.reply(String.format(msg, id)).queue();
+        } else if ("sendmessage".equals(event.getName())){
+            OptionMapping channelMapping = event.getOption("channel");
+            OptionMapping messageMapping = event.getOption("message");
+
+            long channelID = channelMapping.getAsChannel().getIdLong();
+            String message = messageMapping.getAsString();
+
+            Channel targetChannel = jda.getGuildChannelById(channelID);
+            if(!(targetChannel instanceof TextChannel)){
+                event.reply("The specified channel is not a valid text channel.").queue();
+            } else {
+                ((TextChannel) targetChannel).sendMessage(message).queue(v -> {
+                    event.reply("Message as been send.").queue();
+                });
+            }
         }
     }
 

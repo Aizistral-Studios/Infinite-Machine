@@ -40,6 +40,16 @@ public class IndexedMessageDatabase extends AsyncJSONConfig<IndexedMessageDataba
         }
     }
 
+    public void removeCachedMessageByID(long messageID) {
+        try {
+            this.writeLock.lock();
+            this.getData().messageRatingCacheByID.remove(messageID);
+            this.needsSaving.set(true);
+        } finally {
+            this.writeLock.unlock();
+        }
+    }
+
     public boolean hasIndexedMessages(ChannelType type, long channelID) {
         return this.getIndexedMessage(type, channelID, 0) >= 0;
     }
@@ -97,8 +107,6 @@ public class IndexedMessageDatabase extends AsyncJSONConfig<IndexedMessageDataba
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data
     {
-        private final HashMap<Long, Integer> messageCounts = new HashMap<>();
-        private final HashMap<Long, Integer> messageRating = new HashMap<>();
         private final HashMap<Long, ArrayList<Long>> messageRatingCacheByID = new HashMap<>();
         private final HashMap<Long, List<Long>> channelIndexTails = new HashMap<>();
         private final HashMap<Long, List<Long>> threadIndexTails = new HashMap<>();

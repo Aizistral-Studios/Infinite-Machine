@@ -1,6 +1,8 @@
 package com.aizistral.infmachine.indexation;
 
+import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.data.ProcessedMessage;
+import com.aizistral.infmachine.database.local.IndexedMessageDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 import net.dv8tion.jda.api.entities.Message;
@@ -8,17 +10,27 @@ import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.User;
 
 public class CoreMessageIndexer {
-    protected static final StandardLogger LOGGER = new StandardLogger("Message Indexer");
+    private static final StandardLogger LOGGER = new StandardLogger("Message Indexer");
+    private RealtimeMessageIndexer realtimeMessageIndexer;
+
+    protected IndexedMessageDatabase database = IndexedMessageDatabase.INSTANCE;
+
     public static final CoreMessageIndexer INSTANCE = new CoreMessageIndexer();
 
     private CoreMessageIndexer()
     {
+        this.realtimeMessageIndexer = new RealtimeMessageIndexer(InfiniteMachine.INSTANCE.getDomain());
         LOGGER.log("CoreMessageIndexer instantiated.");
     }
 
     public void indexMessage(Message message)
     {
+        if(!isValidMessage(message)) return;
+        long messageID = message.getIdLong();
+        long userID = getUserOfMessage(message).getIdLong();
+        long rating = evaluateMessage(message);
 
+        database.setCachedMessageByID(messageID,userID, rating);
     }
 
     private User getUserOfMessage(Message message)
@@ -35,19 +47,18 @@ public class CoreMessageIndexer {
     }
 
     // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
-    public static int evaluateMessage(Message messageRaw) {
-        // Exclude slash commands from rating
+    public static long evaluateMessage(Message messageRaw) {
         if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
             return 0;
 
         // linkLengthValueInChars describes the flat amount of chars that a Link will
         // contribute to a message Rating
-        int linkLengthValueInChars = 25;
+        long linkLengthValueInChars = 25;
 
         ProcessedMessage message = new ProcessedMessage(messageRaw);
-        int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
-        int emojiContributionToLength = message.getEmojiCount();
-        int length = message.getUniqueLength() + linkContributionToLength + emojiContributionToLength;
+        long linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
+        long emojiContributionToLength = message.getEmojiCount();
+        long length = message.getUniqueLength() + linkContributionToLength + emojiContributionToLength;
 
         return length * length;
     }
