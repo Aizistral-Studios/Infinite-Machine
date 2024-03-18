@@ -14,8 +14,8 @@ import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.database.local.JSONDatabase;
-import com.aizistral.infmachine.indexation.ExhaustiveMessageIndexer;
-import com.aizistral.infmachine.indexation.RealtimeMessageIndexer;
+import com.aizistral.infmachine.indexation.OldExhaustiveMessageIndexer;
+import com.aizistral.infmachine.indexation.OldRealtimeMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.voting.VotingHandler;
 import com.google.common.collect.ImmutableList;
@@ -48,7 +48,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private final JDA jda;
-    private final int minMessageLength;
+    private final long minMessageLength;
     private final Guild domain;
     private final Role believersRole;
     private final Role beholdersRole;
@@ -62,8 +62,8 @@ public class InfiniteMachine extends ListenerAdapter {
     private final long startupTime;
 
     private IndexationMode indexationMode = IndexationMode.DISABLED;
-    private ExhaustiveMessageIndexer exhaustiveIndexer = null;
-    private RealtimeMessageIndexer realtimeIndexer = null;
+    private OldExhaustiveMessageIndexer exhaustiveIndexer = null;
+    private OldRealtimeMessageIndexer realtimeIndexer = null;
     private VotingHandler votingHandler = null;
 
     @SneakyThrows
@@ -75,6 +75,28 @@ public class InfiniteMachine extends ListenerAdapter {
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::trySave));
 
+        registerCommands();
+
+        this.jda.awaitReady();
+
+        this.minMessageLength = this.config.getMinMessageLength();
+        this.domain = jda.getGuildById(this.config.getDomainID());
+
+        if (this.domain == null) {
+            this.terminate(new RuntimeException("The Architect's Domain not found"));
+            throw new IllegalStateException();
+        }
+
+        this.templeChannel = this.domain.getTextChannelById(this.config.getTempleChannelID());
+        this.machineChannel = this.domain.getTextChannelById(this.config.getMachineChannelID());
+        this.councilChannel = this.domain.getTextChannelById(this.config.getCouncilChannelID());
+        this.suggestionsChannel = this.domain.getTextChannelById(this.config.getSuggestionsChannelID());
+        this.believersRole = this.domain.getRoleById(this.config.getBelieversRoleID());
+        this.dwellersRole = this.domain.getRoleById(this.config.getDwellersRoleID());
+        this.beholdersRole = this.domain.getRoleById(this.config.getBeholdersRoleID());
+    }
+
+    private void registerCommands() {
         // TODO Better localization
         this.jda.updateCommands().addCommands(
                 Commands.slash("ping", Localization.translate("cmd.ping.desc")),
@@ -82,6 +104,10 @@ public class InfiniteMachine extends ListenerAdapter {
                 Commands.slash("uptime", Localization.translate("cmd.uptime.desc")),
                 Commands.slash("pet", Localization.translate("cmd.pet.desc"))
                 .addOption(OptionType.USER, "user", Localization.translate("cmd.pet.user"), false),
+                Commands.slash("sendmessage", Localization.translate("cmd.sendmessage.desc"))
+                        .addOption(OptionType.CHANNEL, "channel", Localization.translate("cmd.sendmessage.channel"), true)
+                        .addOption(OptionType.STRING, "message", Localization.translate("cmd.sendmessage.message"), true)
+                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("setindexmode", Localization.translate("cmd.setindexmode.desc"))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
                 .addOption(OptionType.STRING, "mode", Localization.translate("cmd.setindexmode.mode",
@@ -107,24 +133,6 @@ public class InfiniteMachine extends ListenerAdapter {
                         .collect(Collectors.joining("/"))), false)
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
                 ).queue();
-
-        this.jda.awaitReady();
-
-        this.minMessageLength = (int) this.config.getMinMessageLength();
-        this.domain = jda.getGuildById(this.config.getDomainID());
-
-        if (this.domain == null) {
-            this.terminate(new RuntimeException("The Architect's Domain not found"));
-            throw new IllegalStateException();
-        }
-
-        this.templeChannel = this.domain.getTextChannelById(this.config.getTempleChannelID());
-        this.machineChannel = this.domain.getTextChannelById(this.config.getMachineChannelID());
-        this.councilChannel = this.domain.getTextChannelById(this.config.getCouncilChannelID());
-        this.suggestionsChannel = this.domain.getTextChannelById(this.config.getSuggestionsChannelID());
-        this.believersRole = this.domain.getRoleById(this.config.getBelieversRoleID());
-        this.dwellersRole = this.domain.getRoleById(this.config.getDwellersRoleID());
-        this.beholdersRole = this.domain.getRoleById(this.config.getBeholdersRoleID());
     }
 
     private void awake() {
@@ -339,11 +347,12 @@ public class InfiniteMachine extends ListenerAdapter {
                     msg = "You should know, that a soul can't be `/pet`\n(CAN'T BE `/PET`!)\n"
                             + "No matter what machines you wield...";
                 }
-
                 event.reply(msg).queue();
                 return;
             } else if (id == 1124053065109098708L) { // bot's own ID
                 msg = "At the end of times, the <@%s> has pet itself <a:pat_pat_pat:1211592019680694272>";
+            } else if (event.getUser().getIdLong() == 267067816627273730L) {
+                msg = "<@%s> has been masterfully pet";
             }
 
             event.reply(String.format(msg, id)).queue();
@@ -377,7 +386,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
             if (mode == IndexationMode.EXHAUSTIVE) {
                 if (this.exhaustiveIndexer == null || !this.exhaustiveIndexer.isActive()) {
-                    this.exhaustiveIndexer = new ExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
+                    this.exhaustiveIndexer = new OldExhaustiveMessageIndexer(this.domain, this.getDatabase(), this.minMessageLength);
                     this.exhaustiveIndexer.onConvergence(() -> {
                         this.machineChannel.sendMessage("Achieved convergence in exhaustive indexation mode, "
                                 + "switching to real-time...").queue();
@@ -387,7 +396,7 @@ public class InfiniteMachine extends ListenerAdapter {
                 }
             } else if (mode == IndexationMode.REALTIME) {
                 if (this.realtimeIndexer == null) {
-                    this.realtimeIndexer = new RealtimeMessageIndexer(this.domain, this.getDatabase());
+                    this.realtimeIndexer = new OldRealtimeMessageIndexer(this.domain, this.getDatabase());
                     this.jda.addEventListener(this.realtimeIndexer);
                 }
 
@@ -423,24 +432,6 @@ public class InfiniteMachine extends ListenerAdapter {
         } catch (Throwable ex) {
             LOGGER.error("Failed to save database! Stacktrace:", ex);
         }
-    }
-
-    // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
-    public static int evaluateMessage(Message messageRaw) {
-        // Exclude slash commands from rating
-        if (messageRaw.getType().equals(MessageType.SLASH_COMMAND))
-            return 0;
-
-        // linkLengthValueInChars describes the flat amount of chars that a Link will
-        // contribute to a message Rating
-        int linkLengthValueInChars = 25;
-
-        ProcessedMessage message = new ProcessedMessage(messageRaw);
-        int linkContributionToLength = message.getLinkCount() * linkLengthValueInChars;
-        int emojiContributionToLength = message.getEmojiCount();
-        int length = message.getMessage().length() + linkContributionToLength + emojiContributionToLength;
-
-        return length * length;
     }
 
     public static int getDispayRating(int points) {

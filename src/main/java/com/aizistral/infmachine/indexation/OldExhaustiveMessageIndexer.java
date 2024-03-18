@@ -19,17 +19,17 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.restaction.pagination.ThreadChannelPaginationAction;
 
-public class ExhaustiveMessageIndexer {
+public class OldExhaustiveMessageIndexer {
     private static final StandardLogger LOGGER = new StandardLogger("ExhaustiveMessageIndexer");
 
     private final List<Runnable> convergenceHandlers;
     private final AtomicBoolean halt, active;
     private final MachineDatabase database;
     private final Guild guild;
-    private final int minMessageLength;
+    private final long minMessageLength;
     private Thread thread;
 
-    public ExhaustiveMessageIndexer(Guild guild, MachineDatabase database, int minMessageLength) {
+    public OldExhaustiveMessageIndexer(Guild guild, MachineDatabase database, long minMessageLength) {
         this.minMessageLength = minMessageLength;
         this.convergenceHandlers = new ArrayList<>();
         this.guild = guild;
@@ -162,7 +162,7 @@ public class ExhaustiveMessageIndexer {
                             if (author.getIdLong() != Utils.DELETED_USER_ID) {
                                 if (message.getContentRaw().length() >= this.minMessageLength) {
                                     this.database.addMessageCount(author.getIdLong(), 1);
-                                    int points = InfiniteMachine.evaluateMessage(message);
+                                    int points = CoreMessageIndexer.evaluateMessage(message);
                                     this.database.addMessageRating(author.getIdLong(), points);
                                     this.database.setCachedMessageByID(message.getIdLong(),message.getAuthor().getIdLong(), points);
                                 }
