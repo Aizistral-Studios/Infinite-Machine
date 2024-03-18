@@ -106,6 +106,8 @@ public class OldRealtimeMessageIndexer extends ListenerAdapter {
             requiredMessages = this.config.getRequiredMessagesForBeliever();
             requiredRating = this.config.getRequiredRatingForBeliever();
             break;
+        case NONE:
+            break;
         }
 
         if (count >= requiredMessages && rating >= requiredRating) {
