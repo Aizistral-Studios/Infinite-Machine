@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
+public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     public static final InfiniteConfig INSTANCE = new InfiniteConfig();
 
     private InfiniteConfig() {

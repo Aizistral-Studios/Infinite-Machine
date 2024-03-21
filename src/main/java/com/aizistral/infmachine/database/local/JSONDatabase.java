@@ -12,9 +12,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import com.aizistral.infmachine.config.JsonHandler;
 import com.aizistral.infmachine.data.*;
 
-import com.aizistral.infmachine.config.AsyncJSONConfig;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
@@ -25,7 +25,7 @@ import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 
-public class JSONDatabase extends AsyncJSONConfig<JSONDatabase.Data> implements MachineDatabase {
+public class JSONDatabase extends JsonHandler<JSONDatabase.Data> implements MachineDatabase {
     private static final StandardLogger LOGGER = new StandardLogger("JSONDatabase");
     public static final JSONDatabase INSTANCE = new JSONDatabase();
 

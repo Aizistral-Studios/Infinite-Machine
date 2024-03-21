@@ -14,6 +14,7 @@ import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.database.MachineDatabase;
 import com.aizistral.infmachine.database.local.JSONDatabase;
+import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.indexation.OldExhaustiveMessageIndexer;
 import com.aizistral.infmachine.indexation.OldRealtimeMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
@@ -137,6 +138,7 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private void awake() {
+        CoreMessageIndexer.INSTANCE.init();
         this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
                 this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),
                 this.database);

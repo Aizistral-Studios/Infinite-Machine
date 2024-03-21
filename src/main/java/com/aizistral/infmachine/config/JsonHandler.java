@@ -3,7 +3,6 @@ package com.aizistral.infmachine.config;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +22,7 @@ import com.google.gson.GsonBuilder;
 
 import lombok.SneakyThrows;
 
-public abstract class AsyncJSONConfig<T> {
+public abstract class JsonHandler<T> {
     private static final StandardLogger LOGGER = new StandardLogger("JsonHandler");
     protected static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
@@ -41,7 +40,7 @@ public abstract class AsyncJSONConfig<T> {
     private T data = null;
 
     @SneakyThrows
-    protected AsyncJSONConfig(Path filePath, long saveDelay, Class<T> dataClass, Supplier<T> dataFactory) {
+    protected JsonHandler(Path filePath, long saveDelay, Class<T> dataClass, Supplier<T> dataFactory) {
         this.file = filePath.toFile().getCanonicalFile().toPath();
         this.dataFactory = dataFactory;
         this.saveDelay = saveDelay;
