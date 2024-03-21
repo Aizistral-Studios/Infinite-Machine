@@ -138,13 +138,13 @@ public class InfiniteMachine extends ListenerAdapter {
     }
 
     private void awake() {
-        CoreMessageIndexer.INSTANCE.init();
         this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
                 this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),
                 this.database);
 
         this.jda.addEventListener(this);
         this.jda.addEventListener(this.votingHandler);
+        CoreMessageIndexer.INSTANCE.init();
 
         this.setIndexationMode(this.config.getStartupIndexationMode());
 
