@@ -30,7 +30,8 @@ public class CoreMessageIndexer {
     }
 
     public void init() {
-        exhaustiveMessageIndexer.executeReindex();
+        Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
+        exhaustiveIndexer.start();
     }
 
     // ---------------- //
@@ -42,7 +43,7 @@ public class CoreMessageIndexer {
         long userID = getUserOfMessage(message).getIdLong();
         long channelID = message.getChannel().getIdLong();
         long rating = evaluateMessage(message);
-        String sql = String.format("INSERT INTO messageIndex (messageID, authorID, channelID, messageRating) VALUES(%d,%d,%d,%d)",messageID, userID, channelID, rating);
+        String sql = String.format("REPLACE INTO messageIndex (messageID, authorID, channelID, messageRating) VALUES(%d,%d,%d,%d)",messageID, userID, channelID, rating);
         databaseHandler.executeSQL(sql);
     }
 

@@ -21,6 +21,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        LOGGER.log("Message received");
         if(isValidMessageEvent(event)) {
             CoreMessageIndexer.INSTANCE.indexMessage(event.getMessage());
         }

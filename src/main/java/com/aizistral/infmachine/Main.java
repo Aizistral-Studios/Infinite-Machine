@@ -23,20 +23,20 @@ public final class Main {
         LOGGER.log("Starting up the Infinite Machine...");
 
         //Test AREA
-        //*
+        /*
         Table.Builder tableBuilder = new Table.Builder("test");
         tableBuilder.addField("testID", FieldType.LONG, true, true);
         tableBuilder.addField("testName", FieldType.STRING, false, false);
         tableBuilder.addField("testValue", FieldType.LONG, false, true);
         Table table = tableBuilder.build();
         DataBaseHandler.INSTANCE.createNewTable(table);
-        String sql = "INSERT INTO test (testID, testValue) VALUES(3,5)";
+        String sql = "REPLACE INTO test (testID, testValue) VALUES(3,5)";
         DataBaseHandler.INSTANCE.executeSQL(sql);
-        sql = "INSERT INTO test (testID, testName, testValue) VALUES(5,\"baba\",1)";
+        sql = "REPLACE INTO test (testID, testName, testValue) VALUES(5,\"baba\",1)";
         DataBaseHandler.INSTANCE.executeSQL(sql);
-        sql = "INSERT INTO test (testID, testName, testValue) VALUES(4,\"baba baba\",1)";
+        sql = "REPLACE INTO test (testID, testName, testValue) VALUES(4,\"baba baba\",1)";
         DataBaseHandler.INSTANCE.executeSQL(sql);
-        sql = "INSERT INTO test (testID, testValue) VALUES(6,\"dudu\")";
+        sql = "REPLACE INTO test (testID, testValue) VALUES(3,\"dudu\")";
         DataBaseHandler.INSTANCE.executeSQL(sql);
         //*/
 

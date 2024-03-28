@@ -18,7 +18,7 @@ import net.dv8tion.jda.api.requests.restaction.pagination.ThreadChannelPaginatio
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExhaustiveMessageIndexer {
+public class ExhaustiveMessageIndexer implements Runnable{
     private static final StandardLogger LOGGER = new StandardLogger("Exhaustive Message Indexer");
 
     private List<GuildMessageChannel> domainChannels;
@@ -26,7 +26,10 @@ public class ExhaustiveMessageIndexer {
     public ExhaustiveMessageIndexer() {
         LOGGER.log("ExhaustiveIndexer ready, awaiting orders.");
     }
-
+    @Override
+    public void run() {
+        executeReindex();
+    }
     public void executeReindex() {
         LOGGER.log("Executing indexation please stand by...");
         this.domainChannels = collectGuildChannels();
@@ -124,5 +127,6 @@ public class ExhaustiveMessageIndexer {
         action.cache(false).forEachAsync(threads::add).join();
         return threads;
     }
+
 
 }
