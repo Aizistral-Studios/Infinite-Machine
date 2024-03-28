@@ -1,5 +1,6 @@
 package com.aizistral.infmachine.indexation;
 
+import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.database.FieldType;
@@ -25,7 +26,14 @@ public class CoreMessageIndexer {
         this.databaseHandler = DataBaseHandler.INSTANCE;
         createMessageIndexTable();
         this.realtimeMessageIndexer = new RealtimeMessageIndexer();
-        this.exhaustiveMessageIndexer = new ExhaustiveMessageIndexer();
+        this.exhaustiveMessageIndexer = new ExhaustiveMessageIndexer(
+            () -> {
+                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Convergence achieved. All data accounted for.")).queue();
+            },
+            () -> {
+                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Indexer encountered critical error. Please restart process.")).queue();
+            }
+        );
         LOGGER.log("CoreMessageIndexer instantiated.");
     }
 

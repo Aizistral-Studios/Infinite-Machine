@@ -6,7 +6,6 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageHistory;
-import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
@@ -22,20 +21,28 @@ public class ExhaustiveMessageIndexer implements Runnable{
     private static final StandardLogger LOGGER = new StandardLogger("Exhaustive Message Indexer");
 
     private List<GuildMessageChannel> domainChannels;
+    private Runnable callbackOnSuccess;
+    private Runnable callbackOnFailure;
 
-    public ExhaustiveMessageIndexer() {
+    public ExhaustiveMessageIndexer(Runnable callbackOnSuccess, Runnable callbackOnFailure) {
+        this.callbackOnSuccess = callbackOnSuccess;
+        this.callbackOnFailure = callbackOnFailure;
         LOGGER.log("ExhaustiveIndexer ready, awaiting orders.");
     }
     @Override
     public void run() {
-        executeReindex();
+        try{
+            executeReindex();
+            callbackOnSuccess.run();
+        } catch(Exception ex) {
+            callbackOnFailure.run();
+        }
+
     }
     public void executeReindex() {
         LOGGER.log("Executing indexation please stand by...");
         this.domainChannels = collectGuildChannels();
         indexAllMessages();
-        LOGGER.log("Fetched all messages in domain. Proceeding with database verification.");
-        //cleanupIndexedMessages();
         LOGGER.log("Indexation completed. Resuming normal operations.");
     }
 
@@ -77,16 +84,21 @@ public class ExhaustiveMessageIndexer implements Runnable{
         }
     }
 
-    private List<Message> getNextMessages(GuildMessageChannel channel, long lastMessageID, int batchSize) throws ErrorResponseException {
-        MessageHistory history = channel.getHistoryAfter(lastMessageID, batchSize).complete();
-        if (history == null || history.isEmpty()) return null;
-        return history.getRetrievedHistory();
+    private List<Message> getNextMessages(GuildMessageChannel channel, long lastMessageID, int batchSize) throws ErrorResponseException{
+        while(true) {
+            try {
+                MessageHistory history = channel.getHistoryAfter(lastMessageID, batchSize).complete();
+                if (history == null || history.isEmpty()) return null;
+                return history.getRetrievedHistory();
+            } catch(ErrorResponseException ex) {
+                if(ex.getErrorResponse() == ErrorResponse.SERVER_ERROR) {
+                    LOGGER.log("Sever send error response. Trying again...");
+                } else {
+                    throw ex;
+                }
+            }
+        }
     }
-
-    // ---------------- //
-    // Database Cleanup //
-    // ---------------- //
-
 
     // ----------------- //
     // Domain Evaluation //
