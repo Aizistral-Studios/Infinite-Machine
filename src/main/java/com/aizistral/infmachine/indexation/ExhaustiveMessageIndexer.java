@@ -6,6 +6,7 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageHistory;
+import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
@@ -19,6 +20,7 @@ import java.util.List;
 
 public class ExhaustiveMessageIndexer {
     private static final StandardLogger LOGGER = new StandardLogger("Exhaustive Message Indexer");
+
     private List<GuildMessageChannel> domainChannels;
 
     public ExhaustiveMessageIndexer() {
@@ -29,17 +31,21 @@ public class ExhaustiveMessageIndexer {
         LOGGER.log("Executing indexation please stand by...");
         this.domainChannels = collectGuildChannels();
         indexAllMessages();
+        LOGGER.log("Fetched all messages in domain. Proceeding with database verification.");
         //cleanupIndexedMessages();
         LOGGER.log("Indexation completed. Resuming normal operations.");
     }
 
+    // ------------------ //
+    // Message Indexation //
+    // ------------------ //
     private void indexAllMessages() {
         for (GuildMessageChannel channel : domainChannels) {
-            indexChannel(channel);
+            indexChannelMessages(channel);
         }
     }
 
-    private void indexChannel(GuildMessageChannel channel) {
+    private void indexChannelMessages(GuildMessageChannel channel) {
         LOGGER.log("Inspecting channel: " + channel.getName());
         int batchSize = 100;
         MessageHistory history = channel.getHistoryFromBeginning(batchSize).complete();
@@ -74,6 +80,11 @@ public class ExhaustiveMessageIndexer {
         return history.getRetrievedHistory();
     }
 
+    // ---------------- //
+    // Database Cleanup //
+    // ---------------- //
+
+
     // ----------------- //
     // Domain Evaluation //
     // ----------------- //
@@ -92,8 +103,8 @@ public class ExhaustiveMessageIndexer {
         domain.retrieveActiveThreads().complete().forEach(threads::add);
         domain.getChannels().stream().filter(c -> c instanceof VoiceChannel).map(c -> (VoiceChannel) c).forEach((voiceChannels::add));
         for (TextChannel channel : textChannels) {
-            threads.addAll(this.extractAll(channel.retrieveArchivedPublicThreadChannels()));
-            threads.addAll(this.extractAll(channel.retrieveArchivedPrivateThreadChannels()));
+            threads.addAll(this.extractAllThreads(channel.retrieveArchivedPublicThreadChannels()));
+            threads.addAll(this.extractAllThreads(channel.retrieveArchivedPrivateThreadChannels()));
         }
 
         LOGGER.log("Domain evaluation complete.");
@@ -108,7 +119,7 @@ public class ExhaustiveMessageIndexer {
         return channels;
     }
 
-    private List<ThreadChannel> extractAll(ThreadChannelPaginationAction action) {
+    private List<ThreadChannel> extractAllThreads(ThreadChannelPaginationAction action) {
         List<ThreadChannel> threads = new ArrayList<>();
         action.cache(false).forEachAsync(threads::add).join();
         return threads;

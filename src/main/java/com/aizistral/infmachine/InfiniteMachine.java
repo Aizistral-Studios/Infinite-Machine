@@ -10,10 +10,9 @@ import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.IndexationMode;
 import com.aizistral.infmachine.data.LeaderboardOrder;
-import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.data.Voting;
-import com.aizistral.infmachine.database.MachineDatabase;
-import com.aizistral.infmachine.database.local.JSONDatabase;
+import com.aizistral.infmachine.oldDatabase.MachineDatabase;
+import com.aizistral.infmachine.oldDatabase.local.JSONDatabase;
 import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.indexation.OldExhaustiveMessageIndexer;
 import com.aizistral.infmachine.indexation.OldRealtimeMessageIndexer;
@@ -26,8 +25,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
@@ -144,6 +141,9 @@ public class InfiniteMachine extends ListenerAdapter {
 
         this.jda.addEventListener(this);
         this.jda.addEventListener(this.votingHandler);
+
+        //ToDo add Commandhandler
+        //ToDo add VotingHandler
         CoreMessageIndexer.INSTANCE.init();
 
         this.setIndexationMode(this.config.getStartupIndexationMode());
@@ -172,6 +172,7 @@ public class InfiniteMachine extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        LOGGER.log("Message received");
         if (event.isFromGuild() && event.getGuild() == this.domain) {
             if (event.getChannel() == this.suggestionsChannel) {
                 if (event.getAuthor().isBot() || event.getAuthor().isSystem())
@@ -187,6 +188,7 @@ public class InfiniteMachine extends ListenerAdapter {
     @Override
     @SuppressWarnings("unchecked")
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        LOGGER.log("Slashcommandinteraction received");
         if (event.getChannel().getIdLong() != this.machineChannel.getIdLong() &&
                 event.getChannel().getIdLong() != this.templeChannel.getIdLong() &&
                 !"pet".equals(event.getName())) {

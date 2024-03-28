@@ -1,4 +1,4 @@
-package com.aizistral.infmachine.database.local;
+package com.aizistral.infmachine.oldDatabase.local;
 
 import com.aizistral.infmachine.config.JsonHandler;
 import com.aizistral.infmachine.utils.StandardLogger;
@@ -62,19 +62,19 @@ public class IndexedMessageDatabase extends JsonHandler<IndexedMessageDatabase.D
     // Caching of channel messages //
     // --------------------------- //
 
-    public long getCachedMessageByChannelID(long channelID) {
+    public long getCachedChannelByMessageID(long messageID) {
         try {
             this.readLock.lock();
-            return this.getData().messageCacheByChannelID.getOrDefault(channelID, -1L);
+            return this.getData().channelCacheByMessageID.getOrDefault(messageID, -1L);
         } finally {
             this.readLock.unlock();
         }
     }
 
-    public long setCachedMessageByChannelID(long channelID, long messageID) {
+    public long setCachedChannelByMessageID(long messageID, long channelID) {
         try {
             this.writeLock.lock();
-            this.getData().messageCacheByChannelID.put(channelID, messageID);
+            this.getData().channelCacheByMessageID.put(channelID, messageID);
             this.needsSaving.set(true);
             return messageID;
         } finally {
@@ -82,10 +82,10 @@ public class IndexedMessageDatabase extends JsonHandler<IndexedMessageDatabase.D
         }
     }
 
-    public void removeCachedMessageByChannelID(long messageID) {
+    public void removeCachedChannelByMessageID(long messageID) {
         try {
             this.writeLock.lock();
-            this.getData().messageCacheByChannelID.remove(messageID);
+            this.getData().channelCacheByMessageID.remove(messageID);
             this.needsSaving.set(true);
         } finally {
             this.writeLock.unlock();
@@ -99,7 +99,7 @@ public class IndexedMessageDatabase extends JsonHandler<IndexedMessageDatabase.D
         try {
             this.writeLock.lock();
             this.getData().messageRatingCacheByMessageID.clear();
-            this.getData().messageCacheByChannelID.clear();
+            this.getData().channelCacheByMessageID.clear();
             this.needsSaving.set(true);
         } finally {
             this.writeLock.unlock();
@@ -110,6 +110,6 @@ public class IndexedMessageDatabase extends JsonHandler<IndexedMessageDatabase.D
     static final class Data
     {
         private final HashMap<Long, ArrayList<Long>> messageRatingCacheByMessageID = new HashMap<>();
-        private final HashMap<Long, Long> messageCacheByChannelID = new HashMap<>();
+        private final HashMap<Long, Long> channelCacheByMessageID = new HashMap<>();
     }
 }

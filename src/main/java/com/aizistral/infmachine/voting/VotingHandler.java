@@ -11,12 +11,11 @@ import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.Voting;
 import com.aizistral.infmachine.data.VotingStatus;
-import com.aizistral.infmachine.database.MachineDatabase;
+import com.aizistral.infmachine.oldDatabase.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.google.common.collect.ImmutableList;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message.MentionType;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.Role;

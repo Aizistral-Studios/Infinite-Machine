@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.data.Voting;
-import com.aizistral.infmachine.database.MachineDatabase;
+import com.aizistral.infmachine.oldDatabase.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 

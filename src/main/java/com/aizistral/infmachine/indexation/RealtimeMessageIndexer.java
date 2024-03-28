@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.jetbrains.annotations.NotNull;
 
 public class RealtimeMessageIndexer extends ListenerAdapter {
     private static final StandardLogger LOGGER = new StandardLogger("Realtime Message Indexer");
@@ -19,21 +20,21 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
     }
 
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if(isValidMessageEvent(event)) {
             CoreMessageIndexer.INSTANCE.indexMessage(event.getMessage());
         }
     }
 
     @Override
-    public void onMessageDelete(MessageDeleteEvent event) {
+    public void onMessageDelete(@NotNull MessageDeleteEvent event) {
         if(isValidMessageEvent(event)) {
             CoreMessageIndexer.INSTANCE.unindexMessage(event.getMessageIdLong());
         }
     }
 
     @Override
-    public void onMessageUpdate(MessageUpdateEvent event) { //ToDo Check whether this works as intended or change if necessary
+    public void onMessageUpdate(@NotNull MessageUpdateEvent event) { //ToDo Check whether this works as intended or change if necessary
         if(isValidMessageEvent(event)) {
             CoreMessageIndexer.INSTANCE.indexMessage(event.getMessage());
         }

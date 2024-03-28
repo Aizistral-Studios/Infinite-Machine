@@ -1,4 +1,4 @@
-package com.aizistral.infmachine.database.local;
+package com.aizistral.infmachine.oldDatabase.local;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import com.aizistral.infmachine.config.JsonHandler;
 import com.aizistral.infmachine.data.*;
 
-import com.aizistral.infmachine.database.MachineDatabase;
+import com.aizistral.infmachine.oldDatabase.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Triple;
 

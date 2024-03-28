@@ -4,7 +4,10 @@ import java.io.IOException;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
-import com.aizistral.infmachine.database.local.JSONDatabase;
+import com.aizistral.infmachine.database.DataBaseHandler;
+import com.aizistral.infmachine.database.FieldType;
+import com.aizistral.infmachine.database.Table;
+import com.aizistral.infmachine.oldDatabase.local.JSONDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 
 import net.dv8tion.jda.api.JDA;
@@ -18,6 +21,24 @@ public final class Main {
 
     static {
         LOGGER.log("Starting up the Infinite Machine...");
+
+        //Test AREA
+        //*
+        Table.Builder tableBuilder = new Table.Builder("test");
+        tableBuilder.addField("testID", FieldType.LONG, true, true);
+        tableBuilder.addField("testName", FieldType.STRING, false, false);
+        tableBuilder.addField("testValue", FieldType.LONG, false, true);
+        Table table = tableBuilder.build();
+        DataBaseHandler.INSTANCE.createNewTable(table);
+        String sql = "INSERT INTO test (testID, testValue) VALUES(3,5)";
+        DataBaseHandler.INSTANCE.executeSQL(sql);
+        sql = "INSERT INTO test (testID, testName, testValue) VALUES(5,\"baba\",1)";
+        DataBaseHandler.INSTANCE.executeSQL(sql);
+        sql = "INSERT INTO test (testID, testName, testValue) VALUES(4,\"baba baba\",1)";
+        DataBaseHandler.INSTANCE.executeSQL(sql);
+        sql = "INSERT INTO test (testID, testValue) VALUES(6,\"dudu\")";
+        DataBaseHandler.INSTANCE.executeSQL(sql);
+        //*/
 
         try {
             InfiniteConfig.INSTANCE.init();
