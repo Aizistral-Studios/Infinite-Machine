@@ -112,7 +112,6 @@ public abstract class JsonHandler<T> {
             InfiniteMachine.INSTANCE.terminate(new RuntimeException("Fatal JSON error, "
                     + "tried to get data with no data loaded"));
         }
-
         return this.data;
     }
 
