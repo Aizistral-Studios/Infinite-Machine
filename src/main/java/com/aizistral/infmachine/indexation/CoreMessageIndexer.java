@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.User;
 
+import java.time.OffsetDateTime;
+
 public class CoreMessageIndexer {
     private static final StandardLogger LOGGER = new StandardLogger("Core Message Indexer");
 
@@ -21,10 +23,12 @@ public class CoreMessageIndexer {
     private final RealtimeMessageIndexer realtimeMessageIndexer;
     private final ExhaustiveMessageIndexer exhaustiveMessageIndexer;
 
+    private final long indexationTimeTail = OffsetDateTime.now().toEpochSecond() - 1 * 1 * 24 * 60 * 60;
+
     private CoreMessageIndexer()
     {
         this.databaseHandler = DataBaseHandler.INSTANCE;
-        createMessageIndexTable();
+        prepareDatabase();
         this.realtimeMessageIndexer = new RealtimeMessageIndexer();
         this.exhaustiveMessageIndexer = new ExhaustiveMessageIndexer(
             () -> {
@@ -37,21 +41,26 @@ public class CoreMessageIndexer {
         LOGGER.log("CoreMessageIndexer instantiated.");
     }
 
+
     public void init() {
         Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
         exhaustiveIndexer.start();
+    }
+
+    public long getIndexationTimeTail() {
+        return indexationTimeTail;
     }
 
     // ---------------- //
     // Indexation Hooks //
     // ---------------- //
     public void indexMessage(Message message) {
-        if(!isValidMessage(message)) return;
         long messageID = message.getIdLong();
-        long userID = getUserOfMessage(message).getIdLong();
+        long userID = isValidMessage(message) ? getUserOfMessage(message).getIdLong() : -1L;
         long channelID = message.getChannel().getIdLong();
         long rating = evaluateMessage(message);
-        String sql = String.format("REPLACE INTO messageIndex (messageID, authorID, channelID, messageRating) VALUES(%d,%d,%d,%d)",messageID, userID, channelID, rating);
+        long time = message.getTimeCreated().toEpochSecond();
+        String sql = String.format("REPLACE INTO messageIndex (messageID, authorID, channelID, messageRating, timeStamp) VALUES(%d,%d,%d,%d,%d)",messageID, userID, channelID, rating, time);
         databaseHandler.executeSQL(sql);
     }
 
@@ -60,9 +69,13 @@ public class CoreMessageIndexer {
         databaseHandler.executeSQL(sql);
     }
 
-    // --------- //
-    // Utilities //
-    // --------- //
+    // --------------- //
+    // Database Access //
+    // --------------- //
+    private void prepareDatabase() {
+        createMessageIndexTable();
+        removeMessagesNewerThen(indexationTimeTail);
+    }
 
     private void createMessageIndexTable() {
         Table.Builder tableBuilder = new Table.Builder("messageIndex");
@@ -70,10 +83,19 @@ public class CoreMessageIndexer {
         tableBuilder.addField("authorID", FieldType.LONG, false, true);
         tableBuilder.addField("channelID", FieldType.LONG, false, true);
         tableBuilder.addField("messageRating", FieldType.LONG, false, true);
+        tableBuilder.addField("timeStamp", FieldType.TIME, false, true);
         Table table = tableBuilder.build();
         databaseHandler.createNewTable(table);
     }
 
+    private void removeMessagesNewerThen(long dateTimeInSeconds) {
+        String sql = String.format("DELETE FROM messageIndex WHERE timeStamp > %d", dateTimeInSeconds);
+        databaseHandler.executeSQL(sql);
+    }
+
+    // --------- //
+    // Utilities //
+    // --------- //
     private User getUserOfMessage(Message message) {
         return message.getInteraction() != null ? message.getInteraction().getUser() : message.getAuthor();
     }
