@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ProcessedMessage {
-    private String message;
+    private final String message;
     private int linkCount;
     private int emojiCount;
     private final int uniqueLength;
@@ -60,7 +60,7 @@ public class ProcessedMessage {
     }
 
     private String detectEmojis(String message) {
-        Pattern emojiPattern = Pattern.compile("<:.+:\\d{18}>");
+        Pattern emojiPattern = Pattern.compile("<:[^:\\s]+:\\d{18}\\d*>");
         Matcher matcher = emojiPattern.matcher(message);
 
         StringBuilder emojis = new StringBuilder();
