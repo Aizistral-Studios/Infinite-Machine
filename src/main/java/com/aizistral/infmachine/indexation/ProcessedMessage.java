@@ -1,4 +1,4 @@
-package com.aizistral.infmachine.data;
+package com.aizistral.infmachine.indexation;
 
 import net.dv8tion.jda.api.entities.Message;
 
