@@ -1,7 +1,6 @@
 package com.aizistral.infmachine.indexation;
 
 import com.aizistral.infmachine.InfiniteMachine;
-import com.aizistral.infmachine.data.ProcessedMessage;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.database.FieldType;
 import com.aizistral.infmachine.database.Table;

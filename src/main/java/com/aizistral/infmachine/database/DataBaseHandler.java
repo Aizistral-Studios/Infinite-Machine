@@ -1,5 +1,6 @@
 package com.aizistral.infmachine.database;
 
+import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.utils.StandardLogger;
 
 import java.sql.*;
@@ -14,7 +15,6 @@ public class DataBaseHandler {
 
     public static final DataBaseHandler INSTANCE = new DataBaseHandler();
 
-    private Connection connection;
     private DataBaseHandler()
     {
         LOGGER.log("Initializing database...");
@@ -30,11 +30,11 @@ public class DataBaseHandler {
                 LOGGER.log("A new database has been created.");
             } else {
                 LOGGER.error("Database not available and failed to create.");
-                System.exit(1);
+                System.exit(ExitCode.DATABASE_ERROR.getCode());
             }
         } catch (SQLException e) {
             LOGGER.error(e.getMessage());
-            System.exit(1);
+            System.exit(ExitCode.DATABASE_ERROR.getCode());
         }
     }
 
@@ -64,7 +64,7 @@ public class DataBaseHandler {
             statement.execute(sqlString);
         } catch (SQLException e) {
             LOGGER.error(e.getMessage());
-            System.exit(1);
+            System.exit(ExitCode.DATABASE_ERROR.getCode());
         }
     }
 
@@ -77,7 +77,7 @@ public class DataBaseHandler {
             return resultSetToArrayList(resultSet);
         } catch (SQLException e) {
             LOGGER.error(e.getMessage());
-            System.exit(1);
+            System.exit(ExitCode.DATABASE_ERROR.getCode());
         }
         return null;
     }
