@@ -32,6 +32,7 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     private long suggestionsChannelID;
 
     private long architectRoleID;
+    private long petmasterRoleID;
     private long guardiansRoleID;
     private long believersRoleID;
     private long beholdersRoleID;
@@ -70,6 +71,7 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         this.suggestionsChannelID = fetchSuggestionsChannelID();
 
         this.architectRoleID = fetchArchitectRoleID();
+        this.petmasterRoleID = fetchPetmasterRoleID();
         this.guardiansRoleID = fetchGuardiansRoleID();
         this.believersRoleID = fetchBelieversRoleID();
         this.beholdersRoleID = fetchBeholdersRoleID();
@@ -131,6 +133,10 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
 
     public long getArchitectRoleID() {
         return architectRoleID;
+    }
+
+    public long getPetmasterRoleID() {
+        return petmasterRoleID;
     }
 
     public long getGuardiansRoleID() {
@@ -313,6 +319,15 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         }
     }
 
+    private long fetchPetmasterRoleID() {
+        try {
+            this.readLock.lock();
+            return this.getData().petmasterRoleID;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
     private long fetchArchitectRoleID() {
         try {
             this.readLock.lock();
@@ -377,6 +392,7 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         private long beholdersRoleID = 964940092215021678L;
         private long architectRoleID = 757943753779445850L;
         private long guardiansRoleID = 941057860492738590L;
+        private long petmasterRoleID = 1215676063716474890L;
         private long architectID = 545239329656799232L;
         private long upvoteEmojiID = 946944717982142464L;
         private long downvoteEmojiID = 946944748491522098L;
