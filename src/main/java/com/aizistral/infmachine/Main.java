@@ -28,8 +28,7 @@ public final class Main {
 
         String token = InfiniteConfig.INSTANCE.getAccessToken();
 
-        if (token.isEmpty())
-            throw new RuntimeException("Access token not specified in config.json.");
+        if (token.isEmpty()) throw new RuntimeException("Access token not specified in config.json.");
 
         JDABuilder builder = JDABuilder.createDefault(token);
 
