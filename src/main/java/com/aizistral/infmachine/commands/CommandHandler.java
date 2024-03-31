@@ -4,8 +4,10 @@ import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.ZOLDdata.Voting;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.leaderboard.LeaderBoard;
 import com.aizistral.infmachine.utils.StandardLogger;
+import com.aizistral.infmachine.utils.Utils;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -83,7 +85,7 @@ public class CommandHandler extends ListenerAdapter {
                 break;
             }
             case "version": {
-                event.reply(String.format("The machine's version is: **%s**", InfiniteMachine.INSTANCE.getVersion())).queue();
+                event.reply(String.format("The machine's version is: **%s**", DataBaseHandler.INSTANCE.retrieveInfiniteVersion())).queue();
                 break;
             }
             case "uptime": {
@@ -102,15 +104,28 @@ public class CommandHandler extends ListenerAdapter {
                 pet(event);
                 break;
             }
+            case "terminate": {
+                InfiniteMachine.INSTANCE.shutdown();
+                break;
+            }
+            case "fullindex": {
+                ;
+                break;
+            }
+            case "openvoting": {
+                pet(event);
+                break;
+            }
+            case "sendmessage": {
+                pet(event);
+                break;
+            }
             default: {
                 event.reply("Hmm strange this command appears to be not implemented yet. Perhaps ask the Infinite Technician about it?").queue();
             }
         }
 
 /*
-        if ("terminate".equals(event.getName())) {
-            event.reply(Localization.translate("msg.termination")).submit().whenCompleteAsync(
-                    (a, b) -> InfiniteMachine.INSTANCE.shutdown());
             if ("rating".equals(event.getName())) {
                 event.deferReply().flatMap(v -> {
                     return getRatingString(event);
@@ -187,17 +202,17 @@ public class CommandHandler extends ListenerAdapter {
 
         //Excluding Arkadiy from normal petting rules
         if (targetID == 440381346339094539L) {
-            if (hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
+            if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
                 msg = petMasterPetMessage(targetID);
-                msg += String.format("\nYes %s can pet anyone and anything.", getRoleByID(InfiniteConfig.INSTANCE.getPetmasterRoleID()));
+                msg += String.format("\nYes %s can pet anyone and anything.", Utils.getRoleByID(InfiniteConfig.INSTANCE.getPetmasterRoleID()));
             } else {
                 msg = "You should know, that a soul can't be `/pet`\nNo matter what machines you wield...";
             }
-        } else if (hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
+        } else if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
             msg = petMasterPetMessage(targetID);
         }else if (targetID == 814542724010213427L) {
-            if (!hasRole(author, InfiniteConfig.INSTANCE.getArchitectRoleID())) {
-                msg = String.format("How dare you filthy animal lay hands on the muffin of %s.", getRoleByID(InfiniteConfig.INSTANCE.getArchitectRoleID()));
+            if (!Utils.hasRole(author, InfiniteConfig.INSTANCE.getArchitectRoleID())) {
+                msg = String.format("How dare you filthy animal lay hands on the muffin of %s.", Utils.getRoleByID(InfiniteConfig.INSTANCE.getArchitectRoleID()));
             }
         }  else if (targetID == 1124053065109098708L) { // bot's own ID
             msg = "At the end of times, the <@%s> has pet itself <a:pat_pat_pat:1211592019680694272>";
@@ -209,35 +224,19 @@ public class CommandHandler extends ListenerAdapter {
         Random rand = new Random();
         long petmasterID = InfiniteConfig.INSTANCE.getPetmasterRoleID();
         ArrayList<String> possibleReactions = new ArrayList<>();
-        possibleReactions.add(String.format("In a display of wholesome benevolence, <@%s> has been expertly pet by the skilled hands of %s.", targetId, getRoleByID(petmasterID)));
+        possibleReactions.add(String.format("In a display of wholesome benevolence, <@%s> has been expertly pet by the skilled hands of %s.", targetId, Utils.getRoleByID(petmasterID)));
         possibleReactions.add(String.format("<@%s> has experienced the gentle touch of a master petter, their contentment evident in every stroke.", targetId));
         possibleReactions.add(String.format("<@%s> has experienced the gentle touch of a master petter, their spirit uplifted by the soothing strokes.", targetId));
         possibleReactions.add(String.format("With the utmost precision, <@%s> has been pet to perfection, each gesture a testament of their importance.", targetId));
-        possibleReactions.add(String.format("Under the skilled hands of %s, <@%s> has received the most exquisite pets imaginable.", getRoleByID(petmasterID), targetId));
+        possibleReactions.add(String.format("Under the skilled hands of %s, <@%s> has received the most exquisite pets imaginable.", Utils.getRoleByID(petmasterID), targetId));
         possibleReactions.add(String.format("With unparalleled finesse, <@%s> has been graced with the touch of a true petting virtuoso.", targetId));
-        possibleReactions.add(String.format("<@%s> has been honored with the tender ministrations of %s, a moment of pure bliss.", targetId, getRoleByID(petmasterID)));
-        possibleReactions.add(String.format("Under the practiced hand of %s, <@%s> has enjoyed masterful petting, finding comfort in each gentle caress.", getRoleByID(petmasterID), targetId));
+        possibleReactions.add(String.format("<@%s> has been honored with the tender ministrations of %s, a moment of pure bliss.", targetId, Utils.getRoleByID(petmasterID)));
+        possibleReactions.add(String.format("Under the practiced hand of %s, <@%s> has enjoyed masterful petting, finding comfort in each gentle caress.", Utils.getRoleByID(petmasterID), targetId));
         possibleReactions.add(String.format("With each stroke, <@%s> has been reminded of the power of masterful pets.", targetId));
         possibleReactions.add(String.format("<@%s> has been graced with masterful petting, each stroke a symphony of comfort and care.", targetId));
         possibleReactions.add(String.format("In a moment of pure bliss, <@%s> has enjoyed the art of masterful petting, their worries melting away with each touch.", targetId));
         possibleReactions.add(String.format("With each stroke, <@%s> has been transported to a world of serenity, the masterful petting a source of joy and comfort.", targetId));
-        possibleReactions.add(String.format("Under the watchful eye of %s, <@%s> has relished in the art of masterful petting, finding renewal and refreshment in the simple act.", getRoleByID(petmasterID), targetId));
+        possibleReactions.add(String.format("Under the watchful eye of %s, <@%s> has relished in the art of masterful petting, finding renewal and refreshment in the simple act.", Utils.getRoleByID(petmasterID), targetId));
         return possibleReactions.get(Math.abs(rand.nextInt() % possibleReactions.size()));
-    }
-
-    private boolean hasRole(Member member, Long roleID) {
-        List<Role> rolesOfAuthor = member.getRoles();
-        for(Role role : rolesOfAuthor) {
-            if(role.getIdLong() == roleID) return true;
-        }
-        return false;
-    }
-
-    private Role getRoleByID(long roleID) {
-        List<Role> domainRoles = InfiniteMachine.INSTANCE.getDomain().getRoles();
-        for(Role role : domainRoles) {
-            if(role.getIdLong() == roleID) return role;
-        }
-        return null;
     }
 }

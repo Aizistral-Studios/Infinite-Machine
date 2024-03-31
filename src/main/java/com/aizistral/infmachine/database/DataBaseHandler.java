@@ -1,5 +1,6 @@
 package com.aizistral.infmachine.database;
 
+import com.aizistral.infmachine.Main;
 import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.utils.StandardLogger;
 
@@ -19,6 +20,11 @@ public class DataBaseHandler {
     {
         LOGGER.log("Initializing database...");
         createNewDatabase();
+        Table.Builder tableBuilder = new Table.Builder("metaData");
+        tableBuilder.addField("id", FieldType.LONG, true, true);
+        tableBuilder.addField("infiniteVersion", FieldType.STRING, false, true);
+        Table table = tableBuilder.build();
+        createNewTable(table);
         LOGGER.log("Database initialization complete.");
     }
 
@@ -94,6 +100,19 @@ public class DataBaseHandler {
             list.add(row);
         }
         return list;
+    }
+
+    public void setInfiniteVersion(String version) {
+        if(retrieveInfiniteVersion().equals(version)) return;
+        String sql = String.format("REPLACE INTO metaData (id, infiniteVersion) VALUES (1, \"%s\")", version);
+        executeSQL(sql);
+    }
+
+    public String retrieveInfiniteVersion() {
+        String sql = "SELECT * FROM metaData LIMIT 1;";
+        List<Map<String, Object>> results = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
+        if(results.isEmpty()) return "";
+        return results.get(0).get("infiniteVersion").toString();
     }
 
 
