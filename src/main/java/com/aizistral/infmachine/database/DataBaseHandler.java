@@ -1,6 +1,5 @@
 package com.aizistral.infmachine.database;
 
-import com.aizistral.infmachine.Main;
 import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.utils.StandardLogger;
 
