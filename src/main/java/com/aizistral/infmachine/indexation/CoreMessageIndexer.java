@@ -45,7 +45,7 @@ public class CoreMessageIndexer {
         return indexTableName;
     }
 
-    public void init() {
+    public void startExhaustiveIndexRunner() {
         Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
         exhaustiveIndexer.start();
     }
