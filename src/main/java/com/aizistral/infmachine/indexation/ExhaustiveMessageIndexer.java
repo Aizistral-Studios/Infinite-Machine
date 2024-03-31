@@ -43,7 +43,6 @@ public class ExhaustiveMessageIndexer implements Runnable{
             callbackOnFailure.run();
             LOGGER.error("\u001B[31mIndexer Experienced Fatal Error:" + ex.getMessage());
         }
-
     }
     public void executeReindex() {
         LOGGER.log("Executing indexation please stand by...");
