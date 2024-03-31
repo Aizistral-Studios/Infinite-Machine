@@ -41,7 +41,7 @@ public class ExhaustiveMessageIndexer implements Runnable{
             LOGGER.log("Indexation completed. Full success");
         } catch(Exception ex) {
             callbackOnFailure.run();
-            LOGGER.error("\u001B[31mIndexer Experienced Fatal Error:" + ex.getMessage());
+            LOGGER.error("Indexer Experienced Fatal Error:" + ex.getMessage());
         }
     }
     public void executeReindex() {
