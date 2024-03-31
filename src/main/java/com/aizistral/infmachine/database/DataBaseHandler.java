@@ -16,6 +16,8 @@ public class DataBaseHandler {
 
     public static final DataBaseHandler INSTANCE = new DataBaseHandler();
 
+    private ArrayList<String> tableNames = new ArrayList<>();
+
     private DataBaseHandler()
     {
         LOGGER.log("Initializing database...");
@@ -55,7 +57,7 @@ public class DataBaseHandler {
             i++;
         }
         sqlString.append("\n);");
-        executeSQL(sqlString.toString());
+        if(executeSQL(sqlString.toString())) tableNames.add(table.getTableName());
     }
 
     public void deleteTable(String tableName) {
@@ -63,15 +65,17 @@ public class DataBaseHandler {
         executeSQL(sqlString);
     }
 
-    public void executeSQL(String sqlString)
+    public boolean executeSQL(String sqlString)
     {
         try(Connection connection = DriverManager.getConnection(dbUrl)) {
             Statement statement = connection.createStatement();
             statement.execute(sqlString);
+            return true;
         } catch (SQLException e) {
             LOGGER.error(e.getMessage());
             System.exit(ExitCode.DATABASE_ERROR.getCode());
         }
+        return false;
     }
 
     public List<Map<String, Object>> executeQuerySQL(String sqlString)
