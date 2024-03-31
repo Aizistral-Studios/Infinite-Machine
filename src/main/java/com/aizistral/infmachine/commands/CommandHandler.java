@@ -5,11 +5,15 @@ import com.aizistral.infmachine.ZOLDdata.Voting;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.database.DataBaseHandler;
+import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.leaderboard.LeaderBoard;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
+
+import com.aizistral.infmachine.voting.VotingHandler;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -19,7 +23,6 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -109,71 +112,23 @@ public class CommandHandler extends ListenerAdapter {
                 break;
             }
             case "fullindex": {
-                ;
+                DataBaseHandler.INSTANCE.deleteTable(CoreMessageIndexer.INSTANCE.getIndexTableName());
+                CoreMessageIndexer.INSTANCE.startExhaustiveIndexRunner();
                 break;
             }
             case "openvoting": {
-                pet(event);
+                VotingHandler.INSTANCE.createVoting();
+                event.reply("Voting has been created.").queue();
                 break;
             }
             case "sendmessage": {
-                pet(event);
+                sendMessage(event);
                 break;
             }
             default: {
                 event.reply("Hmm strange this command appears to be not implemented yet. Perhaps ask the Infinite Technician about it?").queue();
             }
         }
-
-/*
-            if ("rating".equals(event.getName())) {
-                event.deferReply().flatMap(v -> {
-                    return getRatingString(event);
-                }).queue();
-            } else if ("clearindex".equals(event.getName())) {
-                event.deferReply().flatMap(v -> {
-                    this.getDatabase().resetIndexation();
-                    this.getDatabase().forceSave();
-                    return event.getHook().sendMessage(Localization.translate("msg.indexReset"));
-                }).queue();
-            } else if ("openvoting".equals(event.getName())) {
-                event.deferReply().setEphemeral(true).queue();
-
-                User user = event.getOption("user").getAsUser();
-                OptionMapping typeMapping = event.getOption("type");
-                Voting.Type type = typeMapping != null ? Voting.Type.valueOf(typeMapping.getAsString())
-                        : Voting.Type.GRANT_ROLE;
-
-                this.getDatabase().addMessageCount(user.getIdLong(), 1);
-                this.votingHandler.openVoting(user, -1, false, type).thenAccept(voting -> {
-                    if (voting == null) {
-                        event.getHook().sendMessage(Localization.translate("msg.openVotingFail", user.getId()))
-                                .queue();
-                    } else {
-                        event.getHook().sendMessage(Localization.translate("msg.openVotingSuccess", user.getId()))
-                                .queue();
-                    }
-                });
-            } else if ("version".equals(event.getName())) {
-                event.reply(String.format("The machine's version is: **%s**", this.getVersion())).queue();
-            } else if ("pet".equals(event.getName())) {
-
-            } else if ("sendmessage".equals(event.getName())) {
-                OptionMapping channelMapping = event.getOption("channel");
-                OptionMapping messageMapping = event.getOption("message");
-
-                long channelID = channelMapping.getAsChannel().getIdLong();
-                String message = messageMapping.getAsString();
-
-                Channel targetChannel = jda.getGuildChannelById(channelID);
-                if (!(targetChannel instanceof TextChannel)) {
-                    event.reply("The specified channel is not a valid text channel.").queue();
-                } else {
-                    ((TextChannel) targetChannel).sendMessage(message).queue(v -> {
-                        event.reply("Message as been send.").queue();
-                    });
-                }
-            }*/
     }
 
     private static void uptime (SlashCommandInteractionEvent event){
@@ -238,5 +193,22 @@ public class CommandHandler extends ListenerAdapter {
         possibleReactions.add(String.format("With each stroke, <@%s> has been transported to a world of serenity, the masterful petting a source of joy and comfort.", targetId));
         possibleReactions.add(String.format("Under the watchful eye of %s, <@%s> has relished in the art of masterful petting, finding renewal and refreshment in the simple act.", Utils.getRoleByID(petmasterID), targetId));
         return possibleReactions.get(Math.abs(rand.nextInt() % possibleReactions.size()));
+    }
+
+    private void sendMessage(SlashCommandInteractionEvent event) {
+        OptionMapping channelMapping = event.getOption("channel");
+        OptionMapping messageMapping = event.getOption("message");
+
+        long channelID = channelMapping.getAsChannel().getIdLong();
+        String message = messageMapping.getAsString();
+
+        Channel targetChannel = InfiniteMachine.INSTANCE.getJDA().getGuildChannelById(channelID);
+        if (!(targetChannel instanceof TextChannel)) {
+            event.reply("The specified channel is not a valid text channel.").queue();
+        } else {
+            ((TextChannel) targetChannel).sendMessage(message).queue(v -> {
+                event.reply("Message as been send.").queue();
+            });
+        }
     }
 }
