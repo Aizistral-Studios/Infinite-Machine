@@ -110,14 +110,14 @@ public class ExhaustiveMessageIndexer implements Runnable{
 
     private long getNewestIndexedMessageIDOlderThenTimeStamp(long channelID, long timestamp) {
         if(timestamp < 0) return recoverLastMessageOlderThenID(channelID, -1L);
-        String sql = String.format("SELECT * FROM messageIndex WHERE channelID = %d AND timeStamp <= %d ORDER BY messageID DESC LIMIT 1;",channelID, timestamp);
+        String sql = String.format("SELECT * FROM %s WHERE channelID = %d AND timeStamp <= %d ORDER BY messageID DESC LIMIT 1;", CoreMessageIndexer.INSTANCE.getIndexTableName(),channelID, timestamp);
         List<Map<String, Object>> results = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
         if(results.isEmpty()) return -1L;
         return ((long) results.get(0).get("messageID"));
     }
 
     private long recoverLastMessageOlderThenID(long channelID, long messageID) {
-        String sql = String.format("SELECT * FROM messageIndex WHERE channelID = %d%s ORDER BY timeStamp DESC, messageID DESC LIMIT 1;",channelID,  messageID > 0 ? " AND messageID < " + messageID : "");
+        String sql = String.format("SELECT * FROM %s WHERE channelID = %d%s ORDER BY timeStamp DESC, messageID DESC LIMIT 1;", CoreMessageIndexer.INSTANCE.getIndexTableName(),channelID,  messageID > 0 ? " AND messageID < " + messageID : "");
         List<Map<String, Object>> results = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
         if(results.isEmpty()) return -1L;
         return ((long) results.get(0).get("messageID"));
