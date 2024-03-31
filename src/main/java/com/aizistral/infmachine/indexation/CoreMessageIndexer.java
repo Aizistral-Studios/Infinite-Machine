@@ -21,6 +21,7 @@ public class CoreMessageIndexer {
     private final DataBaseHandler databaseHandler;
     private final RealtimeMessageIndexer realtimeMessageIndexer;
     private final ExhaustiveMessageIndexer exhaustiveMessageIndexer;
+    private final String indexTableName = "messageIndex";
 
     private final long indexationTimeTail = OffsetDateTime.now().toEpochSecond() - 1 * 1 * 24 * 60 * 60;
 
@@ -40,6 +41,9 @@ public class CoreMessageIndexer {
         LOGGER.log("CoreMessageIndexer instantiated.");
     }
 
+    public String getIndexTableName() {
+        return indexTableName;
+    }
 
     public void init() {
         Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
@@ -59,12 +63,12 @@ public class CoreMessageIndexer {
         long channelID = message.getChannel().getIdLong();
         long rating = evaluateMessage(message);
         long time = message.getTimeCreated().toEpochSecond();
-        String sql = String.format("REPLACE INTO messageIndex (messageID, authorID, channelID, messageRating, timeStamp) VALUES(%d,%d,%d,%d,%d)",messageID, userID, channelID, rating, time);
+        String sql = String.format("REPLACE INTO %s (messageID, authorID, channelID, messageRating, timeStamp) VALUES(%d,%d,%d,%d,%d)", indexTableName,messageID, userID, channelID, rating, time);
         databaseHandler.executeSQL(sql);
     }
 
     public void unindexMessage(long deletedMessageID) {
-        String sql = String.format("DELETE FROM messageIndex WHERE messageID = %d", deletedMessageID);
+        String sql = String.format("DELETE FROM %s WHERE messageID = %d", indexTableName, deletedMessageID);
         databaseHandler.executeSQL(sql);
     }
 
@@ -77,7 +81,7 @@ public class CoreMessageIndexer {
     }
 
     private void createMessageIndexTable() {
-        Table.Builder tableBuilder = new Table.Builder("messageIndex");
+        Table.Builder tableBuilder = new Table.Builder(indexTableName);
         tableBuilder.addField("messageID", FieldType.LONG, true, true);
         tableBuilder.addField("authorID", FieldType.LONG, false, true);
         tableBuilder.addField("channelID", FieldType.LONG, false, true);
@@ -88,7 +92,7 @@ public class CoreMessageIndexer {
     }
 
     private void removeMessagesNewerThen(long dateTimeInSeconds) {
-        String sql = String.format("DELETE FROM messageIndex WHERE timeStamp > %d", dateTimeInSeconds);
+        String sql = String.format("DELETE FROM %s WHERE timeStamp > %d", indexTableName, dateTimeInSeconds);
         databaseHandler.executeSQL(sql);
     }
 
