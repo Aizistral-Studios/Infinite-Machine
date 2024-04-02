@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -61,6 +62,9 @@ public class CommandHandler extends ListenerAdapter {
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("fullindex", Localization.translate("cmd.fullindex.desc"))
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                Commands.slash("getmostactive", Localization.translate("cmd.getmostactive.desc"))
+                        .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false)
+                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("openvoting", Localization.translate("cmd.openvoting.desc"))
                         .addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
                         .addOption(OptionType.STRING, "type", Localization.translate("cmd.openvoting.type", Arrays.stream(Voting.Type.values()).map(Voting.Type::toString).collect(Collectors.joining("/"))), false)
@@ -96,11 +100,13 @@ public class CommandHandler extends ListenerAdapter {
                 break;
             }
             case "leaderboard": {
-                event.deferReply().flatMap(v -> LeaderBoard.INSTANCE.getLeaderboardString(event)).queue();
+                String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, false);
+                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
                 break;
             }
             case "rating": {
-                event.deferReply().flatMap(v -> LeaderBoard.INSTANCE.getRatingString(event)).queue();
+                String s  = LeaderBoard.INSTANCE.getRatingString(event);
+                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
                 break;
             }
             case "pet": {
@@ -111,13 +117,18 @@ public class CommandHandler extends ListenerAdapter {
                 InfiniteMachine.INSTANCE.shutdown();
                 break;
             }
+            case "getmostactive": {
+                String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, true);
+                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
+                break;
+            }
             case "fullindex": {
                 DataBaseHandler.INSTANCE.deleteTable(CoreMessageIndexer.INSTANCE.getIndexTableName());
                 CoreMessageIndexer.INSTANCE.startExhaustiveIndexRunner();
                 break;
             }
             case "openvoting": {
-                VotingHandler.INSTANCE.createVoting();
+                VotingHandler.INSTANCE.createVoting(event);
                 event.reply("Voting has been created.").queue();
                 break;
             }

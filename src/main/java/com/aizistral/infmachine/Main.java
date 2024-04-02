@@ -1,6 +1,7 @@
 package com.aizistral.infmachine;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
@@ -9,6 +10,9 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public final class Main {
