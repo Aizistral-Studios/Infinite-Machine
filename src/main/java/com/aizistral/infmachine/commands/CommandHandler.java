@@ -124,7 +124,7 @@ public class CommandHandler extends ListenerAdapter {
             }
             case "fullindex": {
                 DataBaseHandler.INSTANCE.deleteTable(CoreMessageIndexer.INSTANCE.getIndexTableName());
-                CoreMessageIndexer.INSTANCE.startExhaustiveIndexRunner();
+                CoreMessageIndexer.INSTANCE.fullIndex();
                 event.reply("Indexation reset. Running Indexation now.").queue();
                 break;
             }

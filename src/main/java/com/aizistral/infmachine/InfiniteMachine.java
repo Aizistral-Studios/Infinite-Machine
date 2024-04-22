@@ -56,7 +56,7 @@ public class InfiniteMachine extends ListenerAdapter {
         //ToDo add Commandhandler
         //ToDo add VotingHandler
         CommandHandler.INSTANCE.init();
-        CoreMessageIndexer.INSTANCE.startExhaustiveIndexRunner();
+        CoreMessageIndexer.INSTANCE.index();
         /*
         this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
                 this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),

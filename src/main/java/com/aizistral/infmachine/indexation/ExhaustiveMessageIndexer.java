@@ -7,7 +7,6 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageHistory;
-import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.concrete.StageChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
@@ -27,10 +26,12 @@ public class ExhaustiveMessageIndexer implements Runnable{
     private List<GuildMessageChannel> domainChannels;
     private final Runnable callbackOnSuccess;
     private final Runnable callbackOnFailure;
+    private boolean isFullIndex;
 
     public ExhaustiveMessageIndexer(Runnable callbackOnSuccess, Runnable callbackOnFailure) {
         this.callbackOnSuccess = callbackOnSuccess;
         this.callbackOnFailure = callbackOnFailure;
+        setFullIndex(false);
         LOGGER.log("ExhaustiveIndexer ready, awaiting orders.");
     }
     @Override
@@ -46,9 +47,14 @@ public class ExhaustiveMessageIndexer implements Runnable{
     }
     public void executeReindex() {
         LOGGER.log("Executing indexation please stand by...");
-        this.domainChannels = collectGuildChannels(false);
-        indexAllMessages(false);
+        this.domainChannels = collectGuildChannels(isFullIndex);
+        indexAllMessages(isFullIndex);
         LOGGER.log("Indexation completed. Resuming normal operations.");
+        setFullIndex(false);
+    }
+
+    public void setFullIndex(boolean isFullIndex) {
+        this.isFullIndex = isFullIndex;
     }
 
     // ------------------ //
