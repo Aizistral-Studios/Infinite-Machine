@@ -1,36 +1,24 @@
 package com.aizistral.infmachine.voting;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 
+import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
-import com.aizistral.infmachine.data.Voting;
-import com.aizistral.infmachine.data.VotingStatus;
-import com.aizistral.infmachine.oldDatabase.MachineDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.google.common.collect.ImmutableList;
 
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message.MentionType;
-import net.dv8tion.jda.api.entities.MessageReaction;
-import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
-import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
-import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
-import net.dv8tion.jda.api.entities.emoji.Emoji.Type;
-import net.dv8tion.jda.api.entities.emoji.EmojiUnion;
-import net.dv8tion.jda.api.entities.emoji.UnicodeEmoji;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.utils.messages.MessagePollData;
 
 // TODO Figure out how to handle async desync
 public class VotingHandler extends ListenerAdapter {
@@ -39,39 +27,47 @@ public class VotingHandler extends ListenerAdapter {
     private static final List<MentionType> ONBOARDING_PINGS = ImmutableList.of(MentionType.USER);
     private static final List<MentionType> VOTING_PINGS = ImmutableList.of(MentionType.ROLE);
 
-    private final Guild guild;
-    private final InfiniteConfig config;
-    private final TextChannel votingChannel;
-    private final TextChannel onboardingChannel;
-    private final MachineDatabase database;
-    public final CustomEmoji upvote;
-    public final CustomEmoji downvote;
-    public final UnicodeEmoji checkmark;
-    public final CustomEmoji crossmark;
-    private final List<Role> removeAtOnboarding;
-    private final Role believerRole;
-    private final Role dwellerRole;
-    private final Thread thread;
+    public static final VotingHandler INSTANCE = new VotingHandler();
+    private TextChannel councilChannel = null;
 
-    public VotingHandler(Guild guild, TextChannel voting, TextChannel onboarding, Role believerRole,
-            Role dwellerRole, List<Role> removeAtOnboarding, MachineDatabase database) {
-        this.config = InfiniteConfig.INSTANCE;
-        this.guild = guild;
-        this.votingChannel = voting;
-        this.onboardingChannel = onboarding;
-        this.database = database;
 
-        this.upvote = guild.retrieveEmojiById(this.config.getUpvoteEmojiID()).complete();
-        this.downvote = guild.retrieveEmojiById(this.config.getDownvoteEmojiID()).complete();
-        this.crossmark = guild.retrieveEmojiById(this.config.getCrossmarkEmojiID()).complete();
-        this.checkmark = Emoji.fromUnicode("U+2705");
+    private VotingHandler() {
+        Channel channel = InfiniteMachine.INSTANCE.getJDA().getGuildChannelById(InfiniteConfig.INSTANCE.getCouncilChannelID());
+        if(channel instanceof TextChannel) {
+            this.councilChannel = (TextChannel) channel;
+        }
+    }
 
-        this.believerRole = believerRole;
-        this.dwellerRole = dwellerRole;
-        this.removeAtOnboarding = removeAtOnboarding;
-        this.thread = new Thread(this::coreLoop);
-        this.thread.setName("VotingHandler");
-        this.thread.start();
+    public void createManualVoting(SlashCommandInteractionEvent event) {
+        OptionMapping mapping = event.getOption("user");
+        User votingTarget = mapping != null ? mapping.getAsUser() : null;
+        if(votingTarget == null) {
+            event.reply("Specified User could not be found.").queue();
+            return;
+        }
+        mapping = event.getOption("type");
+        String type = mapping != null ? mapping.getAsString() : VotingType.BELIEVER_PROMOTION.toString();
+        String votingInformation = "";
+        if(type.equals(VotingType.BELIEVER_PROMOTION.toString())) {
+            votingInformation = String.format(Localization.translate("msg.promotionVotingForced"), votingTarget.getEffectiveName());
+        } else if (type.equals(VotingType.BELIEVER_DEMOTION.toString())) {
+            votingInformation = String.format(Localization.translate("msg.demotionVotingForced"), votingTarget.getEffectiveName());
+        } else {
+            event.reply("Voting type was not recognised.").queue();
+            return;
+        }
+
+        MessagePollData poll = MessagePollData.builder("Do you agree with this Voting?")
+                .addAnswer("Yes", Emoji.fromFormatted("<:upvote:946944717982142464>"))
+                .addAnswer("No", Emoji.fromFormatted("<:downvote:946944748491522098>"))
+                .setDuration(2, TimeUnit.DAYS)
+                .build();
+
+        if(councilChannel != null) {
+            councilChannel.sendMessage(votingInformation).setPoll(poll).queue(v -> {
+                event.reply("Voting has been created.").queue();
+            });
+        }
     }
 
     private void coreLoop() {
@@ -79,6 +75,7 @@ public class VotingHandler extends ListenerAdapter {
 
         while (true) {
             LOGGER.debug("Checking open votings...");
+            /*
             Set<Voting> votings = this.database.getVotings();
             long checkDelay = this.config.getVotingCheckDelay();
             long votingTime = this.config.getVotingTime();
@@ -93,17 +90,17 @@ public class VotingHandler extends ListenerAdapter {
                     }).join();
                 }
             }
-
+            */
             LOGGER.debug("All votings checked, slumbering.");
 
-            try {
+            /*try {
                 Thread.sleep(checkDelay);
             } catch (InterruptedException ex) {
                 LOGGER.error("Interrupted:", ex);
-            }
+            }*/
         }
     }
-
+/*
     private String getName(User user) {
         return String.format("**%s (<@%s>)**", user.getEffectiveName(), user.getId());
     }
@@ -114,7 +111,8 @@ public class VotingHandler extends ListenerAdapter {
         else
             return false;
     }
-
+*/
+    /*
     public CompletableFuture<Voting> openVoting(User user, int msgCount, boolean increment, Voting.Type type) {
         CompletableFuture<Voting> future = new CompletableFuture<>();
 
@@ -317,5 +315,5 @@ public class VotingHandler extends ListenerAdapter {
             });
         }
     }
-
+*/
 }

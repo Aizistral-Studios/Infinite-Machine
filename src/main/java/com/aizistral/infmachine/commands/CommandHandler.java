@@ -1,7 +1,6 @@
 package com.aizistral.infmachine.commands;
 
 import com.aizistral.infmachine.InfiniteMachine;
-import com.aizistral.infmachine.ZOLDdata.Voting;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.database.DataBaseHandler;
@@ -11,6 +10,7 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
 import com.aizistral.infmachine.voting.VotingHandler;
+import com.aizistral.infmachine.voting.VotingType;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -67,7 +67,7 @@ public class CommandHandler extends ListenerAdapter {
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("openvoting", Localization.translate("cmd.openvoting.desc"))
                         .addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
-                        .addOption(OptionType.STRING, "type", Localization.translate("cmd.openvoting.type", Arrays.stream(Voting.Type.values()).map(Voting.Type::toString).collect(Collectors.joining("/"))), false)
+                        .addOption(OptionType.STRING, "type", Localization.translate("cmd.openvoting.type", Arrays.stream(VotingType.values()).map(VotingType::toString).collect(Collectors.joining("/"))), false)
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("sendmessage", Localization.translate("cmd.sendmessage.desc"))
                         .addOption(OptionType.CHANNEL, "channel", Localization.translate("cmd.sendmessage.channel"), true)
@@ -125,11 +125,11 @@ public class CommandHandler extends ListenerAdapter {
             case "fullindex": {
                 DataBaseHandler.INSTANCE.deleteTable(CoreMessageIndexer.INSTANCE.getIndexTableName());
                 CoreMessageIndexer.INSTANCE.startExhaustiveIndexRunner();
+                event.reply("Indexation reset. Running Indexation now.").queue();
                 break;
             }
             case "openvoting": {
-                VotingHandler.INSTANCE.createVoting(event);
-                event.reply("Voting has been created.").queue();
+                VotingHandler.INSTANCE.createManualVoting(event);
                 break;
             }
             case "sendmessage": {

@@ -25,8 +25,7 @@ public class CoreMessageIndexer {
 
     private final long indexationTimeTail = OffsetDateTime.now().toEpochSecond() - 1 * 1 * 24 * 60 * 60;
 
-    private CoreMessageIndexer()
-    {
+    private CoreMessageIndexer() {
         this.databaseHandler = DataBaseHandler.INSTANCE;
         prepareDatabase();
         this.realtimeMessageIndexer = new RealtimeMessageIndexer();
@@ -46,6 +45,7 @@ public class CoreMessageIndexer {
     }
 
     public void startExhaustiveIndexRunner() {
+        createMessageIndexTable();
         Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
         exhaustiveIndexer.start();
     }
