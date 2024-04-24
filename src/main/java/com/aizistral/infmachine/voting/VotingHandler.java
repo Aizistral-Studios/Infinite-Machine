@@ -1,13 +1,10 @@
 package com.aizistral.infmachine.voting;
 
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.utils.StandardLogger;
+
 import com.google.common.collect.ImmutableList;
 
 import net.dv8tion.jda.api.entities.Message.MentionType;
@@ -19,6 +16,10 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.utils.messages.MessagePollData;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 // TODO Figure out how to handle async desync
 public class VotingHandler extends ListenerAdapter {
@@ -47,27 +48,38 @@ public class VotingHandler extends ListenerAdapter {
         }
         mapping = event.getOption("type");
         String type = mapping != null ? mapping.getAsString() : VotingType.BELIEVER_PROMOTION.toString();
+        boolean success = createVoting(type, votingTarget);
+        if(success) event.reply("Voting has been created.").queue();
+        else event.reply("Voting creation failed. Was the voting type correct?").queue();
+    }
+
+    private boolean createVoting(String type, User votingTarget) {
         String votingInformation = "";
+        String positiveAnswerDescription = "Yes";
+        String negativeAnswerDescription = "No";
         if(type.equals(VotingType.BELIEVER_PROMOTION.toString())) {
             votingInformation = String.format(Localization.translate("msg.promotionVotingForced"), votingTarget.getEffectiveName());
+            positiveAnswerDescription = "Yes, they will make a fine Believer.";
+            negativeAnswerDescription = "No, I don't think that are a fit as of now.";
         } else if (type.equals(VotingType.BELIEVER_DEMOTION.toString())) {
             votingInformation = String.format(Localization.translate("msg.demotionVotingForced"), votingTarget.getEffectiveName());
+            positiveAnswerDescription = "Yes, they disgraced the believers they are unworthy.";
+            negativeAnswerDescription = "No, they deserve another chance.";
         } else {
-            event.reply("Voting type was not recognised.").queue();
-            return;
+            return false;
         }
 
         MessagePollData poll = MessagePollData.builder("Do you agree with this Voting?")
-                .addAnswer("Yes", Emoji.fromFormatted("<:upvote:946944717982142464>"))
-                .addAnswer("No", Emoji.fromFormatted("<:downvote:946944748491522098>"))
+                .addAnswer(positiveAnswerDescription, Emoji.fromFormatted("<:upvote:946944717982142464>"))
+                .addAnswer(negativeAnswerDescription, Emoji.fromFormatted("<:downvote:946944748491522098>"))
                 .setDuration(2, TimeUnit.DAYS)
                 .build();
 
         if(councilChannel != null) {
-            councilChannel.sendMessage(votingInformation).setPoll(poll).queue(v -> {
-                event.reply("Voting has been created.").queue();
-            });
+            councilChannel.sendMessage(votingInformation).setPoll(poll).queue();
+            return true;
         }
+        return false;
     }
 
     private void coreLoop() {

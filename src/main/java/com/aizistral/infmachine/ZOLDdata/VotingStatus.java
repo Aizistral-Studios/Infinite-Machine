@@ -1,4 +1,4 @@
-package com.aizistral.infmachine.data;
+package com.aizistral.infmachine.ZOLDdata;
 
 import lombok.Value;
 
