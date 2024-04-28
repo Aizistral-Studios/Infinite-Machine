@@ -45,5 +45,4 @@ public final class Main {
     public static void main(String... args) throws Exception {
         InfiniteMachine.LOGGER.log("Exiting main method...");
     }
-
 }

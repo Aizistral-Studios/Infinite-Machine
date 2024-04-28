@@ -3,33 +3,50 @@ package com.aizistral.infmachine.voting;
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.data.ExitCode;
+import com.aizistral.infmachine.database.DataBaseHandler;
+import com.aizistral.infmachine.database.FieldType;
+import com.aizistral.infmachine.database.Table;
 import com.aizistral.infmachine.utils.StandardLogger;
 
-import com.google.common.collect.ImmutableList;
-
-import net.dv8tion.jda.api.entities.Message.MentionType;
-import net.dv8tion.jda.api.entities.User;
+import lombok.Getter;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.entities.messages.MessagePoll;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.utils.messages.MessagePollData;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-// TODO Figure out how to handle async desync
+
 public class VotingHandler extends ListenerAdapter {
     private static final StandardLogger LOGGER = new StandardLogger("VotingHandler");
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final List<MentionType> ONBOARDING_PINGS = ImmutableList.of(MentionType.USER);
-    private static final List<MentionType> VOTING_PINGS = ImmutableList.of(MentionType.ROLE);
 
     public static final VotingHandler INSTANCE = new VotingHandler();
+
+    @Getter
     private TextChannel councilChannel = null;
+    private final DataBaseHandler databaseHandler;
+    @Getter
+    private final String votingTableName = "voting";
+    private final String believerTableName = "believers";
+    private final VotingChecker votingChecker;
 
 
     private VotingHandler() {
@@ -37,30 +54,107 @@ public class VotingHandler extends ListenerAdapter {
         if(channel instanceof TextChannel) {
             this.councilChannel = (TextChannel) channel;
         }
+        this.databaseHandler = DataBaseHandler.INSTANCE;
+        createVotingTable();
+        createBelieverTable();
+        InfiniteMachine.INSTANCE.getJDA().addEventListener(this);
+
+        votingChecker = new VotingChecker(
+            () -> {
+                //InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("All registered votings have been checked and updated.")).queue();
+                LOGGER.log("All registered votings have been checked and updated.");
+            },
+            () -> {
+                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Registered votings could not be checked.")).queue();
+            }
+        );
     }
 
+    public void init() {
+        startVotingCheckerRunner();
+        updateBelieverDatabaseWithCurrentBelievers();
+    }
+
+    private void startVotingCheckerRunner() {
+        Thread votingCheckerThread = new Thread(votingChecker, "VotingChecker-Thread");
+        votingCheckerThread.start();
+    }
+
+    private void updateBelieverDatabaseWithCurrentBelievers() {
+        Role believerRole = InfiniteMachine.INSTANCE.getDomain().getRoleById(InfiniteConfig.INSTANCE.getBelieversRoleID());
+        InfiniteMachine.INSTANCE.getDomain().findMembersWithRoles(believerRole).onSuccess(list -> {
+            list.forEach(member -> {
+                if(!isBeliever(member.getIdLong())) {
+                    promoteBelieverInDatabase(member.getIdLong());
+                    LOGGER.log(String.format("Updated database believer status for %s.", member.getEffectiveName()));
+                }
+            });
+        });
+    }
+
+    @Override
+    public void onMessageUpdate(@NotNull MessageUpdateEvent event) {
+        if(event.getMessage().getPoll() == null) return;
+        if(!event.getMessage().getPoll().isExpired()) return;
+        long id = event.getMessage().getIdLong();
+        Map<String, Object> poll = fetchRegisteredVoteByID(id);
+        if(poll == null) return;
+
+        evaluateVote(event.getMessage(), poll);
+    }
+
+    @Override
+    public void onButtonInteraction(ButtonInteractionEvent event) {
+        if(!event.getComponentId().equals("override-accept") && !event.getComponentId().equals("override-decline")) return;
+        LOGGER.log("Button was pressed.");
+        event.deferReply().setEphemeral(true).queue();
+        List<Role> roles = Objects.requireNonNull(event.getMember()).getRoles();
+        Role architectRole = Objects.requireNonNull(event.getGuild()).getRoleById(InfiniteConfig.INSTANCE.getArchitectRoleID());
+        Role overseerRole = Objects.requireNonNull(event.getGuild()).getRoleById(1145688360543862785L);
+        Map<String, Object> registeredVote = fetchRegisteredVoteByID(event.getMessage().getIdLong());
+        if (roles.contains(architectRole) || roles.contains(overseerRole)) {
+            if(registeredVote == null) {
+                event.getHook().editOriginal("This Voting is complete.").queue();
+                return;
+            }
+            event.getHook().editOriginal("Access granted. Executing override...").queue();
+        } else {
+            event.getHook().editOriginal("Insufficient Permission").queue();
+            return;
+        }
+        executeVote(event.getMessage(), registeredVote, event.getComponentId().equals("override-accept"), true);
+    }
+
+    // --------------- //
+    // Voting Creation //
+    // --------------- //
     public void createManualVoting(SlashCommandInteractionEvent event) {
         OptionMapping mapping = event.getOption("user");
         User votingTarget = mapping != null ? mapping.getAsUser() : null;
         if(votingTarget == null) {
-            event.reply("Specified User could not be found.").queue();
+            event.reply("Specified user could not be found.").queue();
+            return;
+        }
+        if(hasVoting(votingTarget.getIdLong())) {
+            event.reply("Specified user already has a pending voting.").queue();
             return;
         }
         mapping = event.getOption("type");
         String type = mapping != null ? mapping.getAsString() : VotingType.BELIEVER_PROMOTION.toString();
+
         boolean success = createVoting(type, votingTarget);
         if(success) event.reply("Voting has been created.").queue();
         else event.reply("Voting creation failed. Was the voting type correct?").queue();
     }
 
-    private boolean createVoting(String type, User votingTarget) {
+    public boolean createVoting(String type, User votingTarget) {
         String votingInformation = "";
-        String positiveAnswerDescription = "Yes";
-        String negativeAnswerDescription = "No";
+        String positiveAnswerDescription;
+        String negativeAnswerDescription;
         if(type.equals(VotingType.BELIEVER_PROMOTION.toString())) {
             votingInformation = String.format(Localization.translate("msg.promotionVotingForced"), votingTarget.getEffectiveName());
             positiveAnswerDescription = "Yes, they will make a fine Believer.";
-            negativeAnswerDescription = "No, I don't think that are a fit as of now.";
+            negativeAnswerDescription = "No, I don't think they are a worthy Believer.";
         } else if (type.equals(VotingType.BELIEVER_DEMOTION.toString())) {
             votingInformation = String.format(Localization.translate("msg.demotionVotingForced"), votingTarget.getEffectiveName());
             positiveAnswerDescription = "Yes, they disgraced the believers they are unworthy.";
@@ -76,256 +170,232 @@ public class VotingHandler extends ListenerAdapter {
                 .build();
 
         if(councilChannel != null) {
-            councilChannel.sendMessage(votingInformation).setPoll(poll).queue();
+            councilChannel.sendMessage(votingInformation)
+            .setPoll(poll)
+            .setActionRow(
+                    Button.primary("override-accept", "Overrule Yes"),
+                    Button.primary("override-decline", "Overrule No")
+            )
+            .queue(message -> {
+                LOGGER.log("Registering voting in database.");
+                addVotingToDatabase(message.getIdLong(), votingTarget.getIdLong(), type);
+                addBelieverVoteCount(votingTarget.getIdLong(), 1);
+                addVotingDiscussionThread(message, votingTarget);
+            });
             return true;
         }
         return false;
     }
 
-    private void coreLoop() {
-        LOGGER.log("Starting up voting handler...");
-
-        while (true) {
-            LOGGER.debug("Checking open votings...");
-            /*
-            Set<Voting> votings = this.database.getVotings();
-            long checkDelay = this.config.getVotingCheckDelay();
-            long votingTime = this.config.getVotingTime();
-
-            for (Voting voting : votings) {
-                if (System.currentTimeMillis() - voting.getStartingTime() >= votingTime) {
-                    LOGGER.log("Closing voting %s...", voting.getMessageID());
-
-                    this.getVotingStatus(voting).thenAcceptAsync(status -> {
-                        boolean positive = status.getVotesFor() > status.getVotesAgainst();
-                        this.closeVoting(voting, positive, false).join();
-                    }).join();
-                }
-            }
-            */
-            LOGGER.debug("All votings checked, slumbering.");
-
-            /*try {
-                Thread.sleep(checkDelay);
-            } catch (InterruptedException ex) {
-                LOGGER.error("Interrupted:", ex);
-            }*/
-        }
-    }
-/*
-    private String getName(User user) {
-        return String.format("**%s (<@%s>)**", user.getEffectiveName(), user.getId());
-    }
-
-    public boolean hasVoting(User user) {
-        if (this.database.getVotings().stream().anyMatch(v -> v.getCandidateID() == user.getIdLong()))
-            return true;
-        else
-            return false;
-    }
-*/
-    /*
-    public CompletableFuture<Voting> openVoting(User user, int msgCount, boolean increment, Voting.Type type) {
-        CompletableFuture<Voting> future = new CompletableFuture<>();
-
-        if (this.hasVoting(user)) {
-            future.complete(null);
-            return future;
-        }
-
-        String message = null;
-
-        if (type == Voting.Type.REVOKE_ROLE) {
-            message = Localization.translate("msg.revokationVoting", this.getName(user));
-        } else if (msgCount < 0) {
-            message = Localization.translate("msg.votingForced", this.getName(user));
-        } else {
-            message = Localization.translate("msg.votingStandard", this.getName(user), msgCount);
-        }
-
-        this.votingChannel.sendMessage(message).setAllowedMentions(VOTING_PINGS).queue(msg -> {
-            String date = LocalDateTime.now().format(FORMATTER);
-            long time = System.currentTimeMillis();
-
-            msg.addReaction(this.upvote).queue(v -> msg.addReaction(this.downvote).queue());
-            msg.createThreadChannel(Localization.translate("title.votingThread", user.getName(), date))
-            .queue(c -> {
-                //c.sendMessage("May your vote be cast in good spirit and with honest intention.").queue();
-            });
-
-            Voting voting = new Voting(msg.getIdLong(), user.getIdLong(), time, type);
-
-            this.database.addVoting(voting);
-
-            if (increment) {
-                this.database.addVotingCount(user.getIdLong(), 1);
-            }
-
-            future.complete(voting);
-        });
-
-        return future;
-    }
-
-    public CompletableFuture<VotingStatus> getVotingStatus(Voting voting) {
-        CompletableFuture<VotingStatus> future = new CompletableFuture<>();
-
-        this.votingChannel.retrieveMessageById(voting.getMessageID()).queue(msg -> {
-            MessageReaction upvote = msg.getReaction(this.upvote);
-            MessageReaction downvote = msg.getReaction(this.downvote);
-
-            int upvotes = upvote != null ? upvote.getCount() : 0;
-            int downvotes = downvote != null ? downvote.getCount() : 0;
-
-            future.complete(new VotingStatus(upvotes, downvotes));
-        }, future::completeExceptionally);
-
-        return future;
-    }
-
-    public CompletableFuture<Void> closeVoting(Voting voting, boolean positive, boolean overruled) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-
-        if (this.database.getVotings().contains(voting)) {
-            this.votingChannel.retrieveMessageById(voting.getMessageID()).queue(msg -> {
-                ThreadChannel thread = msg.getStartedThread();
-                GuildMessageChannel channel = thread != null ? thread : this.votingChannel;
-                boolean revokation = voting.getType() == Voting.Type.REVOKE_ROLE;
-                String votingName = revokation ? "revokationVoting" : "voting";
-
-                this.guild.retrieveMemberById(voting.getCandidateID()).queue(member -> {
-                    if (positive) {
-                        AuditableRestAction<Void> action = null;
-
-                        if (revokation) {
-                            action = this.guild.removeRoleFromMember(member, this.believerRole);
-                        } else {
-                            action = this.guild.addRoleToMember(member, this.believerRole);
-                        }
-
-                        action.queue(v -> {
-                            String message = null;
-
-                            if (!overruled) {
-                                message = Localization.translate("msg." + votingName + "ElapsedPositive",
-                                        this.getName(member.getUser()));
-                            } else {
-                                message = Localization.translate("msg." + votingName + "OverruledPositive",
-                                        this.getName(member.getUser()));
-                            }
-
-                            channel.sendMessage(message).setAllowedMentions(ImmutableList.of()).queue(m -> {
-                                if (!overruled) {
-                                    msg.addReaction(this.checkmark).queue();
-                                }
-
-                                if (revokation) {
-                                    this.guild.addRoleToMember(member, this.dwellerRole).queue();
-
-                                    member.getUser().openPrivateChannel().queue(dm -> {
-                                        dm.sendMessage(Localization.translate("msg.revokationPersonal")).queue();
-                                    });
-                                } else {
-                                    this.removeAtOnboarding.forEach(role -> this.guild.removeRoleFromMember(
-                                            member, role).queue());
-
-                                    this.onboardingChannel.sendMessage(Localization.translate(
-                                            "msg.believerOnboarding", member.getIdLong())).setAllowedMentions(
-                                                    ONBOARDING_PINGS).queue();
-                                }
-
-                                this.database.removeVoting(voting);
-                                future.complete(null);
-                            }, future::completeExceptionally);
-                        }, future::completeExceptionally);
-                    } else {
-                        String message = null;
-
-                        if (!overruled) {
-                            message = Localization.translate("msg." + votingName + "ElapsedNegative",
-                                    this.getName(member.getUser()));
-                        } else {
-                            message = Localization.translate("msg." + votingName + "OverruledNegative",
-                                    this.getName(member.getUser()));
-                        }
-
-                        channel.sendMessage(message).setAllowedMentions(ImmutableList.of()).queue(m -> {
-                            if (!overruled) {
-                                msg.addReaction(this.crossmark).queue();
-                            }
-
-                            this.database.removeVoting(voting);
-                            future.complete(null);
-                        }, future::completeExceptionally);
-                    }
-
-                }, ex -> {
-                    this.votingChannel.sendMessage(Localization.translate("msg.votingLeft",
-                            voting.getCandidateID()))
-                    .queue(m -> {
-                        this.database.removeVoting(voting);
-                        future.complete(null);
-                    }, future::completeExceptionally);
+    private void addVotingDiscussionThread(Message message, User votingTarget) {
+        String date = LocalDateTime.now().format(FORMATTER);
+        String name = votingTarget.getEffectiveName();
+        String threadName = Localization.translate("title.votingThread",name, date);
+        message.createThreadChannel(threadName).queue(c -> {
+                    //c.sendMessage("May your vote be cast in good spirit and with honest intention.").queue();
                 });
-            }, ex -> {
-                LOGGER.error("Looks like voting for user %s has disappeared...", voting.getCandidateID());
-                LOGGER.error("Silently removing from database with no effects.");
 
-                this.database.removeVoting(voting);
-                future.complete(null);
-            });
-        }
-
-        return future;
     }
 
-    @Override
-    public void onMessageReactionAdd(MessageReactionAddEvent event) {
-        if (event.isFromGuild() && event.getGuild() == this.guild) {
-            if (event.getChannel().getIdLong() != this.votingChannel.getIdLong())
-                return;
+    // ----------------- //
+    // Voting Evaluation //
+    // ----------------- //
+    public void evaluateVote(Message message, Map<String, Object> vote) {
+        MessagePoll poll = message.getPoll();
+        if(poll == null) {
+            LOGGER.error("Tried to evaluate message without poll attached");
+            return;
+        }
+        if(!poll.isExpired()) {
+            LOGGER.log("Poll is still running.");
+            return;
+        }
+        long positiveVotes = 0;
+        long negativeVotes = 0;
+        List<MessagePoll.Answer> anwers =  poll.getAnswers();
+        for(MessagePoll.Answer answer : anwers) {
+            String answerText = answer.getText();
+            if(answerText.contains("Yes")){
+                positiveVotes = answer.getVotes();
+            } else {
+                negativeVotes = answer.getVotes();
+            }
+        }
+        executeVote(message, vote, positiveVotes > negativeVotes, false);
+    }
 
-            long msgID = event.getMessageIdLong();
-            EmojiUnion emoji = event.getReaction().getEmoji();
+    private void executeVote(Message message, Map<String, Object> vote, boolean wasSuccessful, boolean wasOverruled) {
+        VotingType votingType = null;
+        try{
+             votingType = VotingType.valueOf((String) vote.get("type"));
+        } catch (IllegalArgumentException e) {
+            LOGGER.error(e.toString());
+            System.exit(ExitCode.PROGRAM_LOGIC_ERROR.getCode());
+        }
 
-            if (emoji.getType() == Type.CUSTOM) {
-                long emojiID = emoji.asCustom().getIdLong();
+        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        VotingType finalVotingType = votingType;
+        domain.retrieveMemberById((long) vote.get("voteTargetID")).queue(member -> {
+            finalExecution(message, wasSuccessful, member, finalVotingType, wasOverruled);
+        });
+    }
 
-                if (emojiID == this.upvote.getIdLong() || emojiID == this.downvote.getIdLong()) {
-                    long userID = event.getUserIdLong();
+    private void finalExecution(Message message, boolean wasSuccessful, Member member, VotingType finalVotingType, boolean wasOverruled) {
+        if(finalVotingType == VotingType.BELIEVER_PROMOTION) {
+            if(wasSuccessful) {
+                updateBeliever(member, true);
+                promoteBelieverInDatabase(member.getIdLong());
+            }
+            concludeVote(message, member, finalVotingType, wasSuccessful, wasOverruled);
+        } else if (finalVotingType == VotingType.BELIEVER_DEMOTION) {
+            if(wasSuccessful) {
+                updateBeliever(member, false);
+                demoteBelieverInDatabase(member.getIdLong());
+            }
+            concludeVote(message, member, finalVotingType, wasSuccessful, wasOverruled);
+        }
+    }
 
-                    this.database.getVotings().stream().filter(v -> v.getMessageID() == msgID).findAny()
-                    .ifPresent(voting -> {
-                        if (voting.getCandidateID() == userID && voting.getType() == Voting.Type.REVOKE_ROLE) {
-                            event.getReaction().removeReaction(event.getUser()).queue();
-                        }
-                    });
+    private static void updateBeliever(Member member, boolean isPromotion) {
+        if(member ==  null) {
+            LOGGER.log("Member was not found in guild. Can't add role.");
+            return;
+        }
+        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        Role believerRole = domain.getRoleById(InfiniteConfig.INSTANCE.getBelieversRoleID());
+        Role mereDwellerRole = domain.getRoleById((InfiniteConfig.INSTANCE.getDwellersRoleID()));
+        changeRoleOnMember(believerRole, member, isPromotion);
+        changeRoleOnMember(mereDwellerRole, member, !isPromotion);
+    }
+
+    private static void changeRoleOnMember(Role role, Member member, boolean add) {
+        if(role == null) {
+            LOGGER.error("Role could not be located.");
+            System.exit(ExitCode.PROGRAM_LOGIC_ERROR.getCode());
+            return;
+        }
+        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        if(add) {
+            domain.addRoleToMember(member, role).queue(
+                    success -> LOGGER.log("Role added successfully."),
+                    error -> LOGGER.error("Failed to add role.")
+            );
+        } else {
+            domain.removeRoleFromMember(member, role).queue(
+                    success -> LOGGER.log("Role removed successfully."),
+                    error -> LOGGER.error("Failed to remove role.")
+            );
+        }
+    }
+    private void concludeVote(Message message, Member votingTarget, VotingType type, boolean wasSuccessful, boolean wasOverruled) {
+        ThreadChannel discussionThread = message.getStartedThread();
+        if(discussionThread == null) {
+            LOGGER.error("Unable to locate voting discussion thread.");
+            return;
+        }
+        String conclusionMessage = "";
+        switch (type) {
+            case BELIEVER_PROMOTION: {
+                if(wasOverruled){
+                    if(wasSuccessful) conclusionMessage = Localization.translate("msg.promotionVotingOverruledPositive", votingTarget);
+                    else conclusionMessage = Localization.translate("msg.promotionVotingOverruledNegative", votingTarget);
+                    break;
                 }
+                if(wasSuccessful) conclusionMessage = Localization.translate("msg.promotionVotingElapsedPositive", votingTarget);
+                else conclusionMessage = Localization.translate("msg.promotionVotingElapsedNegative", votingTarget);
+                break;
             }
-
-            if (event.getUserIdLong() != this.config.getArchitectID())
-                return;
-
-            AtomicBoolean approve = new AtomicBoolean(false);
-
-            if (emoji.getType() == Type.CUSTOM) {
-                if (emoji.asCustom().getIdLong() == this.crossmark.getIdLong()) {
-                    approve.set(false);
-                } else
-                    return;
-            } else if (event.getReaction().getEmoji().getType() == Type.UNICODE) {
-                if (emoji.asUnicode().getAsCodepoints().equals(this.checkmark.getAsCodepoints())) {
-                    approve.set(true);
-                } else
-                    return;
+            case BELIEVER_DEMOTION: {
+                if(wasOverruled){
+                    if(wasSuccessful) conclusionMessage = Localization.translate("msg.demotionVotingOverruledPositive", votingTarget);
+                    else conclusionMessage = Localization.translate("msg.demotionVotingOverruledNegative", votingTarget);
+                    break;
+                }
+                if(wasSuccessful) conclusionMessage = Localization.translate("msg.demotionVotingElapsedPositive", votingTarget);
+                else conclusionMessage = Localization.translate("msg.demotionVotingElapsedNegative", votingTarget);
+                break;
             }
-
-
-            this.database.getVotings().stream().filter(v -> v.getMessageID() == msgID).findAny()
-            .ifPresent(voting -> {
-                this.closeVoting(voting, approve.get(), true);
-            });
         }
+        discussionThread.sendMessage(conclusionMessage).queue();
+        removeVotingFromDatabase(message.getIdLong());
     }
-*/
+
+
+
+    // --------------- //
+    // Database Access //
+    // --------------- //
+    private void createVotingTable() {
+        Table.Builder tableBuilder = new Table.Builder(votingTableName);
+        tableBuilder.addField("messageID", FieldType.LONG, true, true);
+        tableBuilder.addField("voteTargetID", FieldType.LONG, false, true);
+        tableBuilder.addField("type", FieldType.STRING, false, true);
+        Table table = tableBuilder.build();
+        databaseHandler.createNewTable(table);
+    }
+
+    private void addVotingToDatabase(long messageID, long voteTargetID, String type) {
+        String sql = String.format("REPLACE INTO %s (messageID, voteTargetID, type) VALUES(%d,%d,\"%s\")", votingTableName,messageID, voteTargetID, type);
+        databaseHandler.executeSQL(sql);
+    }
+
+    void removeVotingFromDatabase(long keyID) {
+        String sql = String.format("DELETE FROM %s WHERE messageID = %d", votingTableName, keyID);
+        databaseHandler.executeSQL(sql);
+    }
+
+    List<Map<String, Object>> fetchRegisteredVotes() {
+        String sql = String.format("SELECT * FROM %s", VotingHandler.INSTANCE.getVotingTableName());
+        return databaseHandler.executeQuerySQL(sql);
+    }
+
+    Map<String, Object> fetchRegisteredVoteByID(long voteMessageID) {
+        String sql = String.format("SELECT * FROM %s WHERE messageID = %d", VotingHandler.INSTANCE.getVotingTableName(), voteMessageID);
+        List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    public boolean hasVoting(Long userID) {
+        String sql = String.format("SELECT * FROM %s WHERE voteTargetID = %d", VotingHandler.INSTANCE.getVotingTableName(), userID);
+        List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
+        return !results.isEmpty();
+    }
+
+    private void createBelieverTable() {
+        Table.Builder tableBuilder = new Table.Builder(believerTableName);
+        tableBuilder.addField("memberID", FieldType.LONG, true, true);
+        tableBuilder.addField("voteNumber", FieldType.LONG, false, true);
+        tableBuilder.addField("isBeliever", FieldType.BOOLEAN, false, true);
+        Table table = tableBuilder.build();
+        databaseHandler.createNewTable(table);
+    }
+
+    private void promoteBelieverInDatabase(long userID) {
+        String sql = String.format("REPLACE INTO %s (memberID, voteNumber, isBeliever) VALUES(%d,%d,\"%s\")", believerTableName, userID, getVoteAmount(userID), true);
+        databaseHandler.executeSQL(sql);
+    }
+
+    private void demoteBelieverInDatabase(long userID) {
+        String sql = String.format("REPLACE INTO %s (memberID, voteNumber, isBeliever) VALUES(%d,%d,\"%s\")", believerTableName, userID, getVoteAmount(userID), false);
+        databaseHandler.executeSQL(sql);
+    }
+
+    public void addBelieverVoteCount(long userID, long numberOfVotesToAdd) {
+        String sql = String.format("REPLACE INTO %s (memberID, voteNumber, isBeliever) VALUES(%d,%d,\"%s\")", believerTableName, userID, getVoteAmount(userID) + numberOfVotesToAdd, isBeliever(userID));
+        databaseHandler.executeSQL(sql);
+    }
+
+    public long getVoteAmount(long userID) {
+        String sql = String.format("SELECT * FROM %s WHERE memberID = %d", believerTableName, userID);
+        List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
+        if(results.isEmpty()) return 0;
+        return (long) results.get(0).get("voteNumber");
+    }
+
+    public boolean isBeliever(long userID) {
+        String sql = String.format("SELECT * FROM %s WHERE memberID = %d", believerTableName, userID);
+        List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
+        if(results.isEmpty()) return false;
+        return (boolean) results.get(0).get("isBeliever");
+    }
 }

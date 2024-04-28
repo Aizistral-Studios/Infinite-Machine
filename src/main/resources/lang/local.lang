@@ -26,29 +26,29 @@ msg.votingStandard=For now a mere dweller, %s has proven worthy of attention, se
 
 msg.promotionVotingForced=<@&757943753779445850> himself has recognized the potential of %s, and believes we must consider accepting them as one of devoted believers. It is your duty and honor to assist him in making this decision.\n\nI summon the <@&1133729791862911037> to hold this voting. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
 
-msg.votingElapsedPositive=Voting for %s is complete, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
+msg.promotionVotingElapsedPositive=Voting for %s is complete, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
 
-msg.votingElapsedNegative=Voting for %s is complete, and they were denied the title of a Devoted Believer. Perhaps another time...
+msg.promotionVotingElapsedNegative=Voting for %s is complete, and they were denied the title of a Devoted Believer. Perhaps another time...
 
-msg.votingOverruledPositive=<@&757943753779445850> himself overruled the voting for %s, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
+msg.promotionVotingOverruledPositive=<@&757943753779445850> himself overruled the voting for %s, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
 
-msg.votingOverruledNegative=<@&757943753779445850> himself overruled the voting for %s, and they were denied the title of a Devoted Believer. Perhaps another time...
+msg.promotionVotingOverruledNegative=<@&757943753779445850> himself overruled the voting for %s, and they were denied the title of a Devoted Believer. Perhaps another time...
 
-msg.votingLeft=Voting on <@%s> is complete, but it appears they have left The Architect's Domain. Let us all bid farewell.
+msg.votingLeft=Voting on <@%s> is complete, but it appears they have left The Architect's Domain.
 
 msg.believerOnboarding=<@%s>, I greet you among the <@&771377288927117342>! Your presence and activity across The Architect's Domain were recognized, and it was decided to award you this honorable title.\n\nAs one of the believers, you may enjoy greater proximity to The Architect and his works, and access to channels beyond the reach of mere dwellers, this one included. You may also choose to join the <@&1133729791862911037> and participate in votings that are held to decide whether other people of notice should be accepted as believers; see <#1133412399936970802> and its pinned posts for more details on that.\n\nFurthermore, if you happen to be the enjoyer of a particular work of The Architect known as Enigmatic Legacy, you may obtain access to unique item in that mod known as **The Architect's Favor**, which is only visible to and usable by the believers. Although it is beyond my power to grant you such access here and now, feel free to poke <@&757943753779445850> himself regarding this matter.\n\nMay your presence here be as enjoyable for you as it is for us.
 
 msg.demotionVotingForced=<@&757943753779445850> himself believes %s's transgressions warrant exilement from the halls of the <#953374742457499659>. He has called upon us to help him make this decision, and we shall reply.\n\nI summon the <@&1133729791862911037> to hold this voting. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
 
-msg.revokationVotingElapsedPositive=The council has spoken, and %s is now exiled from our ranks. May they learn from their mistakes, and one day, perhaps, they will find redemption.
+msg.demotionVotingElapsedPositive=The council has spoken, and %s is now exiled from our ranks. May they learn from their mistakes, and one day, perhaps, they will find redemption.
 
-msg.revokationVotingElapsedNegative=The council has voted against the exilement of %s from our ranks. Although their stay is yet allowed, we must remain vigilant.
+msg.demotionVotingElapsedNegative=The council has voted against the exilement of %s from our ranks. Although their stay is yet allowed, we must remain vigilant.
 
-msg.revokationVotingOverruledPositive=<@&757943753779445850>'s patience has been exhausted, and by his decree the exilement of %s from our ranks is enacted immediately. May it teach them and all of us a lesson.
+msg.demotionVotingOverruledPositive=<@&757943753779445850>'s patience has been exhausted, and by his decree the exilement of %s from our ranks is enacted immediately. May it teach them and all of us a lesson.
 
-msg.revokationVotingOverruledNegative=<@&757943753779445850> has reconsidered, and this voting is cancelled in accordance with his decision.
+msg.demotionVotingOverruledNegative=<@&757943753779445850> has reconsidered, and this voting is cancelled in accordance with his decision.
 
-msg.revokationPersonal=It is my duty to inform you that in the light of your transgressions, you have lost the title of a devoted believer within The Architect's Domain. You are now considered a mere dweller. The Architect teaches us that any soul may earn redemption, however hopeless it may appear... May you one day find yours.
+msg.demotionPersonal=It is my duty to inform you that in the light of your transgressions, you have lost the title of a devoted believer within The Architect's Domain. You are now considered a mere dweller. The Architect teaches us that any soul may earn redemption, however hopeless it may appear... May you one day find yours.
 
 msg.wrongCommandChannel=It is the wrong space and time...
 msg.pong=Pong!

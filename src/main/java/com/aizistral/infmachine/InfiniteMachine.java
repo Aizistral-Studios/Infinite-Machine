@@ -7,6 +7,7 @@ import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
 
+import com.aizistral.infmachine.voting.VotingHandler;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import net.dv8tion.jda.api.JDA;
@@ -53,31 +54,13 @@ public class InfiniteMachine extends ListenerAdapter {
 
 
     private void awake() {
-        //ToDo add Commandhandler
-        //ToDo add VotingHandler
         CommandHandler.INSTANCE.init();
         CoreMessageIndexer.INSTANCE.index();
-        /*
-        this.votingHandler = new VotingHandler(this.domain, this.councilChannel, this.templeChannel,
-                this.believersRole, this.dwellersRole, ImmutableList.of(this.dwellersRole, this.beholdersRole),
-                this.database);
-        this.jda.addEventListener(this.votingHandler);
-         */
+        VotingHandler.INSTANCE.init();
 
         LOGGER.log("Domain channels: " + this.domain.getChannels().size());
 
-        /*
-        this.domain.findMembersWithRoles(this.believersRole).onSuccess(list -> {
-            list.forEach(member -> {
-                int votingCount = this.database.getVotingCount(member.getIdLong());
 
-                if (votingCount <= 0) {
-                    LOGGER.log("Set starting voting count of user %s to 1.", member.getEffectiveName());
-                    this.database.addVotingCount(member.getIdLong(), 1);
-                }
-            });
-        });
-*/
         String version = this.getVersion();
         if (!DataBaseHandler.INSTANCE.retrieveInfiniteVersion().equals(version)){
             DataBaseHandler.INSTANCE.setInfiniteVersion(version);
