@@ -59,11 +59,6 @@ public class DataBaseHandler {
         if(executeSQL(sqlString.toString())) tableNames.add(table.getTableName());
     }
 
-    public void deleteTable(String tableName) {
-        String sqlString = "DROP TABLE IF EXISTS " + tableName + ";";
-        executeSQL(sqlString);
-    }
-
     public boolean executeSQL(String sqlString)
     {
         try(Connection connection = DriverManager.getConnection(dbUrl)) {
