@@ -7,11 +7,14 @@ import com.aizistral.infmachine.database.Table;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.utils.Utils;
 
+import com.aizistral.infmachine.voting.VotingHandler;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.User;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
 
 public class CoreMessageIndexer {
     private static final StandardLogger LOGGER = new StandardLogger("Core Message Indexer");
@@ -45,18 +48,21 @@ public class CoreMessageIndexer {
     }
 
     public void fullIndex() {
+        exhaustiveMessageIndexer.stop();
+        clearTable();
         exhaustiveMessageIndexer.setFullIndex(true);
         startExhaustiveIndexRunner();
     }
 
     public void index() {
+        exhaustiveMessageIndexer.stop();
         exhaustiveMessageIndexer.setFullIndex(false);
         startExhaustiveIndexRunner();
     }
 
     private void startExhaustiveIndexRunner() {
         createMessageIndexTable();
-        Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "ExhaustiveIndexer-Thread");
+        Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "IndexerCatchUp-Thread");
         exhaustiveIndexer.start();
     }
 
@@ -69,12 +75,16 @@ public class CoreMessageIndexer {
     // ---------------- //
     public void indexMessage(Message message) {
         long messageID = message.getIdLong();
-        long userID = isValidMessage(message) ? getUserOfMessage(message).getIdLong() : -1L;
+        User user = isValidMessage(message) ? getUserOfMessage(message) : null;
+        long userID = user != null ? user.getIdLong() : -1L;
         long channelID = message.getChannel().getIdLong();
         long rating = evaluateMessage(message);
         long time = message.getTimeCreated().toEpochSecond();
         String sql = String.format("REPLACE INTO %s (messageID, authorID, channelID, messageRating, timeStamp) VALUES(%d,%d,%d,%d,%d)", indexTableName,messageID, userID, channelID, rating, time);
         databaseHandler.executeSQL(sql);
+        if(user != null) {
+            VotingHandler.INSTANCE.createVoteIfNeeded(user);
+        }
     }
 
     public void unindexMessage(long deletedMessageID) {
@@ -104,6 +114,26 @@ public class CoreMessageIndexer {
     private void removeMessagesNewerThen(long dateTimeInSeconds) {
         String sql = String.format("DELETE FROM %s WHERE timeStamp > %d", indexTableName, dateTimeInSeconds);
         databaseHandler.executeSQL(sql);
+    }
+
+    public long getNumberOfMessagesByUserID(long userID) {
+        String sql = String.format("SELECT COUNT(*) as sendMessages FROM %s WHERE authorID = %d", indexTableName, userID);
+        List<Map<String, Object>> entries = databaseHandler.executeQuerySQL(sql);
+        if(entries == null) return 0;
+        return ((Integer) entries.get(0).get("sendMessages")).longValue();
+    }
+
+    public long getRating(long authorID) {
+        String sql = String.format("SELECT SUM(messageRating) as rating FROM %s WHERE authorID = %d",CoreMessageIndexer.INSTANCE.getIndexTableName(), authorID);
+        List<Map<String, Object>> entries = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
+        if(entries == null) return 0;
+        long internalRating =  ((Integer) entries.get(0).get("rating")).longValue();
+        return internalRating;
+    }
+
+    private void clearTable() {
+        String sql = String.format("DELETE FROM %s", indexTableName);
+        DataBaseHandler.INSTANCE.executeSQL(sql);
     }
 
     // --------- //

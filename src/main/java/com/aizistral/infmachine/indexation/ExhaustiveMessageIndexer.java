@@ -1,6 +1,7 @@
 package com.aizistral.infmachine.indexation;
 
 import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.utils.StandardLogger;
 
@@ -17,16 +18,19 @@ import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.restaction.pagination.ThreadChannelPaginationAction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class ExhaustiveMessageIndexer implements Runnable{
-    private static final StandardLogger LOGGER = new StandardLogger("Exhaustive Message Indexer");
+    private static final StandardLogger LOGGER = new StandardLogger("Exhaustive Indexer");
 
     private List<GuildMessageChannel> domainChannels;
     private final Runnable callbackOnSuccess;
     private final Runnable callbackOnFailure;
-    private boolean isFullIndex;
+    private volatile boolean isFullIndex;
+
+    private volatile boolean continueRunning = true;
 
     public ExhaustiveMessageIndexer(Runnable callbackOnSuccess, Runnable callbackOnFailure) {
         this.callbackOnSuccess = callbackOnSuccess;
@@ -36,15 +40,23 @@ public class ExhaustiveMessageIndexer implements Runnable{
     }
     @Override
     public void run() {
+        this.continueRunning = true;
         try{
+            InfiniteMachine.INSTANCE.getMachineChannel().sendMessage("Starting Indexation...").complete();
             executeReindex();
             callbackOnSuccess.run();
             LOGGER.log("Indexation completed. Full success");
         } catch(Exception ex) {
             callbackOnFailure.run();
-            LOGGER.error("Indexer experienced Fatal Error:" + ex.getMessage());
+            LOGGER.error("Indexer experienced Fatal Error:" + Arrays.toString(ex.getStackTrace()));
         }
     }
+
+    public void stop() {
+        this.continueRunning = false;
+        LOGGER.log("Terminating indexation thread");
+    }
+
     public void executeReindex() {
         LOGGER.log("Executing indexation please stand by...");
         this.domainChannels = collectGuildChannels(isFullIndex);
@@ -63,6 +75,7 @@ public class ExhaustiveMessageIndexer implements Runnable{
     private void indexAllMessages(Boolean fullIndex) {
         int i = 0;
         for (GuildMessageChannel channel : domainChannels) {
+            if(!continueRunning) return;
             LOGGER.log(String.format("%d of %d", i++, domainChannels.size()));
             if(fullIndex) indexAllChannelMessages(channel);
             else indexChannelMessagesAfterMessage(channel, getNewestIndexedMessageIDOlderThenTimeStamp(channel.getIdLong(), CoreMessageIndexer.INSTANCE.getIndexationTimeTail()));
@@ -79,6 +92,10 @@ public class ExhaustiveMessageIndexer implements Runnable{
         while(messages != null) {
             LOGGER.log(String.format("Length of MessageList : %d", messages.size()));
             for (int i = messages.size() - 1; i >= 0 ; i--) {
+                if(!continueRunning) {
+                    LOGGER.log("Termination signal received. Shutting down indexing thread.");
+                    return;
+                }
                 Message message = messages.get(i);
                 CoreMessageIndexer.INSTANCE.indexMessage(message);
                 lastMessageID = message.getIdLong();
@@ -138,14 +155,13 @@ public class ExhaustiveMessageIndexer implements Runnable{
         List<GuildMessageChannel> channels = new ArrayList<>();
 
         List<TextChannel> textChannels = new ArrayList<>();
-        List<ThreadChannel> threads = new ArrayList<>();
         List<VoiceChannel> voiceChannels = new ArrayList<>();
         List<StageChannel> stageChannels = new ArrayList<>();
 
         LOGGER.log("Starting domain evaluation...");
 
         domain.getChannels().stream().filter(c -> c instanceof TextChannel).map(c -> (TextChannel) c).forEach(textChannels::add);
-        domain.retrieveActiveThreads().complete().forEach(threads::add);
+        List<ThreadChannel> threads = new ArrayList<>(domain.retrieveActiveThreads().complete());
         domain.getChannels().stream().filter(c -> c instanceof VoiceChannel).map(c -> (VoiceChannel) c).forEach((voiceChannels::add));
         domain.getChannels().stream().filter(c -> c instanceof StageChannel).map(c -> (StageChannel) c).forEach((stageChannels::add));
 
