@@ -7,6 +7,7 @@ import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.database.FieldType;
 import com.aizistral.infmachine.database.Table;
+import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
 
 import lombok.Getter;
@@ -142,20 +143,59 @@ public class VotingHandler extends ListenerAdapter {
         mapping = event.getOption("type");
         String type = mapping != null ? mapping.getAsString() : VotingType.BELIEVER_PROMOTION.toString();
 
-        boolean success = createVoting(type, votingTarget);
+        boolean success = createVoting(type, votingTarget, true);
         if(success) event.reply("Voting has been created.").queue();
-        else event.reply("Voting creation failed. Was the voting type correct?").queue();
+        else event.reply("Voting creation failed. Please check that the User is a Member of the Domain and the voting type is correct.").queue();
     }
 
-    public boolean createVoting(String type, User votingTarget) {
+    public void createVoteIfNeeded(@NotNull User user) {
+        long userID = user.getIdLong();
+        if(isBeliever(userID)) return;
+        if(!needVote(userID)) return;
+        createVoting(VotingType.BELIEVER_PROMOTION.toString(), user, false);
+    }
+
+    private boolean needVote(long userID) {
+        if(hasVoting(userID)) return false;
+        if(userID == 866354348489572352L) return true;
+        long voteCount = getVoteAmount(userID);
+        long messageCount = CoreMessageIndexer.INSTANCE.getNumberOfMessagesByUserID(userID);
+        long totalRating = CoreMessageIndexer.INSTANCE.getRating(userID);
+        boolean hasMessages = messageCount >= InfiniteConfig.INSTANCE.getRequiredMessagesForBeliever() * (voteCount + 1);
+        boolean hasRating = totalRating >= InfiniteConfig.INSTANCE.getRequiredRatingForBeliever() * (voteCount + 1);
+
+        boolean needsVote = false;
+        switch (InfiniteConfig.INSTANCE.getBelieverMethod())
+        {
+            case MESSAGES:
+                if(hasMessages) needsVote = true;
+                break;
+            case RATING:
+                if(hasRating) needsVote = true;
+                break;
+            case MESSAGES_AND_RATING:
+                if(hasMessages && hasRating) needsVote = true;
+                break;
+            case NONE:
+                break;
+        }
+        return needsVote;
+    }
+
+    public boolean createVoting(String type, User votingTarget, boolean isForced) {
+        if(!isMemberInDomain(votingTarget)) return false;
         String votingInformation = "";
         String positiveAnswerDescription;
         String negativeAnswerDescription;
-        if(type.equals(VotingType.BELIEVER_PROMOTION.toString())) {
+        if (type.equals(VotingType.BELIEVER_PROMOTION.toString()) && !isForced) {
+            votingInformation = String.format(Localization.translate("msg.votingStandard"), votingTarget.getEffectiveName(), CoreMessageIndexer.INSTANCE.getNumberOfMessagesByUserID(votingTarget.getIdLong()));
+            positiveAnswerDescription = "Yes, they will make a fine Believer.";
+            negativeAnswerDescription = "No, I don't think they are a worthy Believer.";
+        } else if(type.equals(VotingType.BELIEVER_PROMOTION.toString()) && isForced) {
             votingInformation = String.format(Localization.translate("msg.promotionVotingForced"), votingTarget.getEffectiveName());
             positiveAnswerDescription = "Yes, they will make a fine Believer.";
             negativeAnswerDescription = "No, I don't think they are a worthy Believer.";
-        } else if (type.equals(VotingType.BELIEVER_DEMOTION.toString())) {
+        } else if (type.equals(VotingType.BELIEVER_DEMOTION.toString()) && isForced) {
             votingInformation = String.format(Localization.translate("msg.demotionVotingForced"), votingTarget.getEffectiveName());
             positiveAnswerDescription = "Yes, they disgraced the believers they are unworthy.";
             negativeAnswerDescription = "No, they deserve another chance.";
@@ -169,22 +209,25 @@ public class VotingHandler extends ListenerAdapter {
                 .setDuration(2, TimeUnit.DAYS)
                 .build();
 
-        if(councilChannel != null) {
-            councilChannel.sendMessage(votingInformation)
+        if(councilChannel != null)
+        {
+            Message votingMessage = councilChannel.sendMessage(votingInformation)
             .setPoll(poll)
             .setActionRow(
                     Button.primary("override-accept", "Overrule Yes"),
                     Button.primary("override-decline", "Overrule No")
             )
-            .queue(message -> {
-                LOGGER.log("Registering voting in database.");
-                addVotingToDatabase(message.getIdLong(), votingTarget.getIdLong(), type);
-                addBelieverVoteCount(votingTarget.getIdLong(), 1);
-                addVotingDiscussionThread(message, votingTarget);
-            });
+            .complete();
+            LOGGER.log("Registering voting in database.");
+            addVotingToDatabase(votingMessage.getIdLong(), votingTarget.getIdLong(), type);
+            addVotingDiscussionThread(votingMessage, votingTarget);
             return true;
         }
         return false;
+    }
+
+    private boolean isMemberInDomain(User user) {
+        return InfiniteMachine.INSTANCE.getDomain().isMember(user);
     }
 
     private void addVotingDiscussionThread(Message message, User votingTarget) {
@@ -254,6 +297,7 @@ public class VotingHandler extends ListenerAdapter {
             }
             concludeVote(message, member, finalVotingType, wasSuccessful, wasOverruled);
         }
+        addBelieverVoteCount(member.getIdLong(), 1);
     }
 
     private static void updateBeliever(Member member, boolean isPromotion) {
@@ -389,13 +433,15 @@ public class VotingHandler extends ListenerAdapter {
         String sql = String.format("SELECT * FROM %s WHERE memberID = %d", believerTableName, userID);
         List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
         if(results.isEmpty()) return 0;
-        return (long) results.get(0).get("voteNumber");
+        return ((Integer) results.get(0).get("voteNumber")).longValue();
     }
 
     public boolean isBeliever(long userID) {
         String sql = String.format("SELECT * FROM %s WHERE memberID = %d", believerTableName, userID);
         List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
         if(results.isEmpty()) return false;
-        return (boolean) results.get(0).get("isBeliever");
+        return "true".equals((String) results.get(0).get("isBeliever"));
     }
+
+
 }
