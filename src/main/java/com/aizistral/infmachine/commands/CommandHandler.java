@@ -125,7 +125,7 @@ public class CommandHandler extends ListenerAdapter {
             case "fullindex": {
                 DataBaseHandler.INSTANCE.deleteTable(CoreMessageIndexer.INSTANCE.getIndexTableName());
                 CoreMessageIndexer.INSTANCE.fullIndex();
-                event.reply("Indexation reset. Running Indexation now.").queue();
+                event.reply("Indexation reset.").queue();
                 break;
             }
             case "openvoting": {
