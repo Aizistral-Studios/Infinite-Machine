@@ -76,7 +76,7 @@ public class ExhaustiveMessageIndexer implements Runnable{
         int i = 0;
         for (GuildMessageChannel channel : domainChannels) {
             if(!continueRunning) return;
-            LOGGER.log(String.format("%d of %d", i++, domainChannels.size()));
+            LOGGER.log(String.format("%d of %d", ++i, domainChannels.size()));
             if(fullIndex) indexAllChannelMessages(channel);
             else indexChannelMessagesAfterMessage(channel, getNewestIndexedMessageIDOlderThenTimeStamp(channel.getIdLong(), CoreMessageIndexer.INSTANCE.getIndexationTimeTail()));
         }
