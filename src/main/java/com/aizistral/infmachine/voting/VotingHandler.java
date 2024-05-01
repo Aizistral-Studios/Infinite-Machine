@@ -183,7 +183,7 @@ public class VotingHandler extends ListenerAdapter {
     }
 
     public boolean createVoting(String type, User votingTarget, boolean isForced) {
-        if(!isMemberInDomain(votingTarget)) return false;
+        if(!isMemberInDomain(votingTarget) || isTheArchitect(votingTarget)) return false;
         String votingInformation = "";
         String positiveAnswerDescription;
         String negativeAnswerDescription;
@@ -226,8 +226,13 @@ public class VotingHandler extends ListenerAdapter {
         return false;
     }
 
+
+
     private boolean isMemberInDomain(User user) {
         return InfiniteMachine.INSTANCE.getDomain().isMember(user);
+    }
+    private boolean isTheArchitect(User user) {
+        return user.getIdLong() == 545239329656799232L;
     }
 
     private void addVotingDiscussionThread(Message message, User votingTarget) {
