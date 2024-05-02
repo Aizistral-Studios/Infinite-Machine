@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
-import com.aizistral.infmachine.database.local.JSONDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 
 import net.dv8tion.jda.api.JDA;
@@ -22,7 +21,6 @@ public final class Main {
         try {
             InfiniteConfig.INSTANCE.init();
             InfiniteConfig.INSTANCE.forceSave();
-            JSONDatabase.INSTANCE.init();
             Localization.load();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -30,8 +28,7 @@ public final class Main {
 
         String token = InfiniteConfig.INSTANCE.getAccessToken();
 
-        if (token.isEmpty())
-            throw new RuntimeException("Access token not specified in config.json.");
+        if (token.isEmpty()) throw new RuntimeException("Access token not specified in config.json.");
 
         JDABuilder builder = JDABuilder.createDefault(token);
 
@@ -48,5 +45,4 @@ public final class Main {
     public static void main(String... args) throws Exception {
         InfiniteMachine.LOGGER.log("Exiting main method...");
     }
-
 }

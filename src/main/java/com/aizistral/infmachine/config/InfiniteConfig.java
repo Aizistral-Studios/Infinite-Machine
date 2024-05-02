@@ -1,23 +1,181 @@
 package com.aizistral.infmachine.config;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 
 import com.aizistral.infmachine.data.BelieverMethod;
-import com.aizistral.infmachine.data.IndexationMode;
 
+import com.aizistral.infmachine.utils.StandardLogger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
+public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
+    protected static final StandardLogger LOGGER = new StandardLogger("InfiniteConfig");
+
     public static final InfiniteConfig INSTANCE = new InfiniteConfig();
+
+    private String accessToken;
+
+    private long votingCheckDelay;
+    private long votingTime;
+
+    private long minMessageLength;
+    private long requiredMessagesForBeliever;
+    private long requiredRatingForBeliever;
+    private BelieverMethod believerMethod;
+
+    private long domainID;
+    private long templeChannelID;
+    private long councilChannelID;
+    private long machineChannelID;
+    private long suggestionsChannelID;
+
+    private long architectRoleID;
+    private long petmasterRoleID;
+    private long guardiansRoleID;
+    private long believersRoleID;
+    private long beholdersRoleID;
+    private long dwellersRoleID;
+    private long architectID;
+
+    private long upvoteEmojiID;
+    private long downvoteEmojiID;
+    private long crossmarkEmojiID;
 
     private InfiniteConfig() {
         super(Paths.get("./config/config.json"), 600_000L, Data.class, Data::new);
+        LOGGER.log("Initializing Config");
+        try {
+            super.init();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Override
+    public void init() {
+        this.accessToken = fetchAccessToken();
+
+        this.votingCheckDelay = fetchVotingCheckDelay();
+        this.votingTime = fetchVotingTime();
+
+        this.minMessageLength = fetchMinMessageLength();
+        this.requiredMessagesForBeliever = fetchRequiredMessagesForBeliever();
+        this.requiredRatingForBeliever = fetchRequiredRatingForBeliever();
+        this.believerMethod = fetchBelieverMethod();
+
+        this.domainID = fetchDomainID();
+        this.templeChannelID = fetchTempleChannelID();
+        this.councilChannelID = fetchCouncilChannelID();
+        this.machineChannelID = fetchMachineChannelID();
+        this.suggestionsChannelID = fetchSuggestionsChannelID();
+
+        this.architectRoleID = fetchArchitectRoleID();
+        this.petmasterRoleID = fetchPetmasterRoleID();
+        this.guardiansRoleID = fetchGuardiansRoleID();
+        this.believersRoleID = fetchBelieversRoleID();
+        this.beholdersRoleID = fetchBeholdersRoleID();
+        this.dwellersRoleID = fetchDwellersRoleID();
+        this.architectID = fetchArchitectID();
+
+        this.upvoteEmojiID = fetchUpvoteEmojiID();
+        this.downvoteEmojiID = fetchDownvoteEmojiID();
+        this.crossmarkEmojiID = fetchCrossmarkEmojiID();
     }
 
-    @NonNull
     public String getAccessToken() {
+        return accessToken;
+    }
+
+    public long getVotingCheckDelay() {
+        return votingCheckDelay;
+    }
+
+    public long getVotingTime() {
+        return votingTime;
+    }
+
+    public long getMinMessageLength() {
+        return minMessageLength;
+    }
+
+    public long getRequiredMessagesForBeliever() {
+        return requiredMessagesForBeliever;
+    }
+
+    public long getRequiredRatingForBeliever() {
+        return requiredRatingForBeliever;
+    }
+
+    public BelieverMethod getBelieverMethod() {
+        return believerMethod;
+    }
+
+    public long getDomainID() {
+        return domainID;
+    }
+
+    public long getTempleChannelID() {
+        return templeChannelID;
+    }
+
+    public long getCouncilChannelID() {
+        return councilChannelID;
+    }
+
+    public long getMachineChannelID() {
+        return machineChannelID;
+    }
+
+    public long getSuggestionsChannelID() {
+        return suggestionsChannelID;
+    }
+
+    public long getArchitectRoleID() {
+        return architectRoleID;
+    }
+
+    public long getPetmasterRoleID() {
+        return petmasterRoleID;
+    }
+
+    public long getGuardiansRoleID() {
+        return guardiansRoleID;
+    }
+
+    public long getBelieversRoleID() {
+        return believersRoleID;
+    }
+
+    public long getBeholdersRoleID() {
+        return beholdersRoleID;
+    }
+
+    public long getDwellersRoleID() {
+        return dwellersRoleID;
+    }
+
+    public long getArchitectID() {
+        return architectID;
+    }
+
+    public long getUpvoteEmojiID() {
+        return upvoteEmojiID;
+    }
+
+    public long getDownvoteEmojiID() {
+        return downvoteEmojiID;
+    }
+
+    public long getCrossmarkEmojiID() {
+        return crossmarkEmojiID;
+    }
+
+    // --------------------- //
+    // Read from config-file //
+    // --------------------- //
+    @NonNull
+    private String fetchAccessToken() {
         try {
             this.readLock.lock();
             return this.getData().accessToken != null ? this.getData().accessToken : "";
@@ -26,17 +184,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public IndexationMode getStartupIndexationMode() {
-        try {
-            this.readLock.lock();
-            return this.getData().startupIndexationMode;
-        } finally {
-            this.readLock.unlock();
-        }
-
-    }
-
-    public long getVotingCheckDelay() {
+    private long fetchVotingCheckDelay() {
         try {
             this.readLock.lock();
             return this.getData().votingCheckDelay;
@@ -45,7 +193,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getVotingTime() {
+    private long fetchVotingTime() {
         try {
             this.readLock.lock();
             return this.getData().votingTime;
@@ -54,7 +202,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getMinMessageLength() {
+    private long fetchMinMessageLength() {
         try {
             this.readLock.lock();
             return this.getData().minMessageLength;
@@ -63,7 +211,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getRequiredMessagesForBeliever() {
+    private long fetchRequiredMessagesForBeliever() {
         try {
             this.readLock.lock();
             return this.getData().requiredMessagesForBeliever;
@@ -72,7 +220,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getRequiredRatingForBeliever() {
+    private long fetchRequiredRatingForBeliever() {
         try {
             this.readLock.lock();
             return this.getData().requiredRatingForBeliever;
@@ -81,7 +229,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public BelieverMethod getBelieverMethod() {
+    private BelieverMethod fetchBelieverMethod() {
         try {
             this.readLock.lock();
             return this.getData().believerMethod;
@@ -90,7 +238,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getDomainID() {
+    private long fetchDomainID() {
         try {
             this.readLock.lock();
             return this.getData().domainID;
@@ -99,7 +247,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getTempleChannelID() {
+    private long fetchTempleChannelID() {
         try {
             this.readLock.lock();
             return this.getData().templeChannelID;
@@ -108,7 +256,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getMachineChannelID() {
+    private long fetchMachineChannelID() {
         try {
             this.readLock.lock();
             return this.getData().machineChannelID;
@@ -117,7 +265,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getCouncilChannelID() {
+    private long fetchCouncilChannelID() {
         try {
             this.readLock.lock();
             return this.getData().councilChannelID;
@@ -126,7 +274,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getSuggestionsChannelID() {
+    private long fetchSuggestionsChannelID() {
         try {
             this.readLock.lock();
             return this.getData().suggestionsChannelID;
@@ -135,7 +283,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getBelieversRoleID() {
+    private long fetchBelieversRoleID() {
         try {
             this.readLock.lock();
             return this.getData().believersRoleID;
@@ -144,7 +292,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getDwellersRoleID() {
+    private long fetchDwellersRoleID() {
         try {
             this.readLock.lock();
             return this.getData().dwellersRoleID;
@@ -153,7 +301,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getBeholdersRoleID() {
+    private long fetchBeholdersRoleID() {
         try {
             this.readLock.lock();
             return this.getData().beholdersRoleID;
@@ -162,7 +310,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getGuardiansRoleID() {
+    private long fetchGuardiansRoleID() {
         try {
             this.readLock.lock();
             return this.getData().guardiansRoleID;
@@ -171,7 +319,16 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getArchitectRoleID() {
+    private long fetchPetmasterRoleID() {
+        try {
+            this.readLock.lock();
+            return this.getData().petmasterRoleID;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
+    private long fetchArchitectRoleID() {
         try {
             this.readLock.lock();
             return this.getData().architectRoleID;
@@ -180,7 +337,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getArchitectID() {
+    private long fetchArchitectID() {
         try {
             this.readLock.lock();
             return this.getData().architectID;
@@ -189,7 +346,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getUpvoteEmojiID() {
+    private long fetchUpvoteEmojiID() {
         try {
             this.readLock.lock();
             return this.getData().upvoteEmojiID;
@@ -198,7 +355,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getDownvoteEmojiID() {
+    private long fetchDownvoteEmojiID() {
         try {
             this.readLock.lock();
             return this.getData().downvoteEmojiID;
@@ -207,7 +364,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         }
     }
 
-    public long getCrossmarkEmojiID() {
+    private long fetchCrossmarkEmojiID() {
         try {
             this.readLock.lock();
             return this.getData().crossmarkEmojiID;
@@ -219,7 +376,6 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private String accessToken = "";
-        private IndexationMode startupIndexationMode = IndexationMode.DISABLED;
         private long votingCheckDelay = 60_000L;
         private long votingTime = 60_000L;
         private long minMessageLength = 0;
@@ -236,6 +392,7 @@ public class InfiniteConfig extends AsyncJSONConfig<InfiniteConfig.Data> {
         private long beholdersRoleID = 964940092215021678L;
         private long architectRoleID = 757943753779445850L;
         private long guardiansRoleID = 941057860492738590L;
+        private long petmasterRoleID = 1215676063716474890L;
         private long architectID = 545239329656799232L;
         private long upvoteEmojiID = 946944717982142464L;
         private long downvoteEmojiID = 946944748491522098L;
