@@ -43,13 +43,8 @@ public class InfiniteMachine extends ListenerAdapter {
             System.exit(ExitCode.MISSING_DOMAIN_ERROR.getCode());
             throw new IllegalStateException();
         }
-
         this.machineChannel = domain.getTextChannelById(InfiniteConfig.INSTANCE.getMachineChannelID());
     }
-
-    /*
-    private VotingHandler votingHandler = null;
-     */
 
 
 
