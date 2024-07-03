@@ -10,47 +10,39 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import com.aizistral.infmachine.voting.VotingHandler;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 @Getter
 public class InfiniteMachine extends ListenerAdapter {
     protected static final StandardLogger LOGGER = new StandardLogger("InfiniteMachine");
-    public static final InfiniteMachine INSTANCE = new InfiniteMachine(Main.JDA);
+    public static final InfiniteMachine INSTANCE = new InfiniteMachine();
 
     static {
         INSTANCE.awake();
     }
-    private final JDA jda;
+
     @Getter
     private final long startupTime;
     @Getter
     private final Guild domain;
-    @Getter
-    private final TextChannel machineChannel;
 
     @SneakyThrows
-    private InfiniteMachine(JDA jda) {
-        this.jda = jda;
+    private InfiniteMachine() {
         this.startupTime = System.currentTimeMillis();
-        this.jda.awaitReady();
 
-        this.domain = jda.getGuildById(InfiniteConfig.INSTANCE.getDomainID());
+        this.domain = InfiniteConfig.INSTANCE.getDomain();
         if (this.domain == null) {
             LOGGER.error("Architects Domain could not be located. Is the machine not there yet?");
             System.exit(ExitCode.MISSING_DOMAIN_ERROR.getCode());
             throw new IllegalStateException();
         }
-        this.machineChannel = domain.getTextChannelById(InfiniteConfig.INSTANCE.getMachineChannelID());
     }
-
-
 
     private void awake() {
         CommandHandler.INSTANCE.init();
-        CoreMessageIndexer.INSTANCE.index();
+        CoreMessageIndexer.INSTANCE.index();;
         VotingHandler.INSTANCE.init();
 
         LOGGER.log("Domain channels: " + this.domain.getChannels().size());
@@ -59,30 +51,19 @@ public class InfiniteMachine extends ListenerAdapter {
         String version = this.getVersion();
         if (!DataBaseHandler.INSTANCE.retrieveInfiniteVersion().equals(version)){
             DataBaseHandler.INSTANCE.setInfiniteVersion(version);
-            this.machineChannel.sendMessage(String.format("<:the_cube:963161249028378735> Version **%s** of Infinite Machine was deployed successfully.", version)).queue();
+            InfiniteConfig.INSTANCE.getMachineChannel().sendMessage(String.format("<:the_cube:963161249028378735> Version **%s** of Infinite Machine was deployed successfully.", version)).queue();
         }
-
-
     }
 
-    /*
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         LOGGER.log("Message received");
         if (event.isFromGuild() && event.getGuild() == this.domain) {
-            if (event.getChannel() == this.suggestionsChannel) {
-                if (event.getAuthor().isBot() || event.getAuthor().isSystem())
-                    return;
-
-                event.getMessage().addReaction(this.votingHandler.upvote).queue(v -> {
-                    event.getMessage().addReaction(this.votingHandler.downvote).queue();
-                });
+            if (event.getChannel() == InfiniteConfig.INSTANCE.getSuggestionsChannel()) {
+                if (event.getAuthor().isBot() || event.getAuthor().isSystem()) return;
+                event.getMessage().addReaction(InfiniteConfig.INSTANCE.getUpvoteEmoji()).queue(v -> event.getMessage().addReaction(InfiniteConfig.INSTANCE.getDownvoteEmoji()).queue());
             }
         }
-    }
-    */
-    public JDA getJDA() {
-        return this.jda;
     }
 
     public String getVersion() {

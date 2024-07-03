@@ -1,6 +1,7 @@
 package com.aizistral.infmachine.commands;
 
 import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.Main;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.database.DataBaseHandler;
@@ -11,9 +12,13 @@ import com.aizistral.infmachine.utils.Utils;
 
 import com.aizistral.infmachine.voting.VotingHandler;
 import com.aizistral.infmachine.voting.VotingType;
+import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.GuildMessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -28,12 +33,14 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static net.dv8tion.jda.api.Permission.MESSAGE_MENTION_EVERYONE;
+
 public class CommandHandler extends ListenerAdapter {
     private static final StandardLogger LOGGER = new StandardLogger("CommandHandler");
     public static final CommandHandler INSTANCE = new CommandHandler();
 
     private CommandHandler() {
-        InfiniteMachine.INSTANCE.getJDA().addEventListener(this);
+        InfiniteConfig.INSTANCE.getJDA().addEventListener(this);
     }
 
     public void init() {
@@ -43,7 +50,7 @@ public class CommandHandler extends ListenerAdapter {
     private void registerCommands() {
         LOGGER.log("Registering Commands...");
         // TODO Better localization
-        InfiniteMachine.INSTANCE.getJDA().updateCommands().addCommands(
+        InfiniteConfig.INSTANCE.getJDA().updateCommands().addCommands(
                 //Test Commands
                 Commands.slash("ping", Localization.translate("cmd.ping.desc")),
                 Commands.slash("version", Localization.translate("cmd.version.desc")),
@@ -55,8 +62,7 @@ public class CommandHandler extends ListenerAdapter {
                         .addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
                 //Fun Commands
                 Commands.slash("pet", Localization.translate("cmd.pet.desc"))
-                        .addOption(OptionType.USER, "user", Localization.translate("cmd.pet.user"), false),
-                //ToDo Add option to pet role
+                        .addOption(OptionType.MENTIONABLE, "target", Localization.translate("cmd.pet.user"), false),
                 //Admin Commands
                 Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
                         .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
@@ -81,7 +87,7 @@ public class CommandHandler extends ListenerAdapter {
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         LOGGER.log("SlashCommandInteraction received");
 
-        if (event.getChannel().getIdLong() != InfiniteConfig.INSTANCE.getMachineChannelID() && event.getChannel().getIdLong() != InfiniteConfig.INSTANCE.getTempleChannelID() && !"pet".equals(event.getName())) {
+        if (event.getChannel() != InfiniteConfig.INSTANCE.getMachineChannel() && event.getChannel() != InfiniteConfig.INSTANCE.getTempleChannel() && !"pet".equals(event.getName())) {
             event.reply("It is the wrong place and time...").queue();
             return;
         }
@@ -114,6 +120,7 @@ public class CommandHandler extends ListenerAdapter {
                 break;
             }
             case "terminate": {
+                event.reply("Executing: Halt and catch fire protocol").queue();
                 InfiniteMachine.INSTANCE.shutdown();
                 break;
             }
@@ -160,48 +167,78 @@ public class CommandHandler extends ListenerAdapter {
     }
 
     private void pet(SlashCommandInteractionEvent event) {
-        OptionMapping mapping = event.getOption("user");
-        long targetID = mapping != null ? mapping.getAsUser().getIdLong() : 310848622642069504L;
+        OptionMapping mapping = event.getOption("target");
+        IMentionable mentionable = mapping != null ? mapping.getAsMentionable() : null;
+        long targetID = 310848622642069504L;
+        IMentionable target;
+        if(mentionable == null) {
+            target = Main.JDA.retrieveUserById(targetID).complete();
+        } else if (mentionable instanceof User) {
+            target = mapping.getAsUser();
+            targetID = target.getIdLong();
+        } else if (mentionable instanceof Member) {
+            target = mapping.getAsUser();
+            targetID = target.getIdLong();
+        } else if (mentionable instanceof Role) {
+            if(memberHasPermissionToMentionRoleHere(event.getUser(), event.getGuildChannel(), mapping.getAsRole())) {
+                target = mapping.getAsRole();
+                targetID = target.getIdLong();
+            } else {
+                event.reply("You lack the required permissions to mention that role.").setEphemeral(true).queue();
+                return;
+            }
+        } else {
+            target = Main.JDA.retrieveUserById(targetID).complete();
+        }
+
         Member author = event.getMember();
-        String msg = "<@%s> has been pet <a:pat_pat_pat:1211592019680694272>";
+        assert author != null;
+        String msg = "%s has been pet <a:pat_pat_pat:1211592019680694272>";
 
         //Excluding Arkadiy from normal petting rules
         if (targetID == 440381346339094539L) {
-            if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
-                msg = petMasterPetMessage(targetID);
-                msg += String.format("\nYes %s can pet anyone and anything.", Utils.getRoleByID(InfiniteConfig.INSTANCE.getPetmasterRoleID()));
+            if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRole().getIdLong())) {
+                msg = petMasterPetMessage(target);
+                msg += String.format("\nYes %s can pet anyone and anything.", InfiniteConfig.INSTANCE.getPetmasterRole());
             } else {
                 msg = "You should know, that a soul can't be `/pet`\nNo matter what machines you wield...";
             }
-        } else if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRoleID())) {
-            msg = petMasterPetMessage(targetID);
+        } else if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRole().getIdLong())) {
+            msg = petMasterPetMessage(target);
         }else if (targetID == 814542724010213427L) {
-            if (!Utils.hasRole(author, InfiniteConfig.INSTANCE.getArchitectRoleID())) {
-                msg = String.format("How dare you filthy animal lay hands on the muffin of %s.", Utils.getRoleByID(InfiniteConfig.INSTANCE.getArchitectRoleID()));
+            if (!Utils.hasRole(author, InfiniteConfig.INSTANCE.getArchitectRole().getIdLong())) {
+                msg = String.format("How dare you filthy animal lay hands on the muffin of %s.", InfiniteConfig.INSTANCE.getArchitectRole());
             }
         }  else if (targetID == 1124053065109098708L) { // bot's own ID
-            msg = "At the end of times, the <@%s> has pet itself <a:pat_pat_pat:1211592019680694272>";
+            msg = "At the end of times, the %s has pet itself <a:pat_pat_pat:1211592019680694272>";
         }
-        event.reply(String.format(msg, targetID)).queue();
+        event.reply(String.format(msg, target)).queue();
     }
 
-    private String petMasterPetMessage(long targetId) {
+    private boolean memberHasPermissionToMentionRoleHere(User user, GuildMessageChannelUnion guildChannel, Role role) {
+        Member member = Utils.userToMember(user);
+        if(member == null) return false;
+        if(!role.isMentionable() && !member.hasPermission(guildChannel, MESSAGE_MENTION_EVERYONE)) return false;
+        return true;
+    }
+
+    private String petMasterPetMessage(IMentionable target) {
         Random rand = new Random();
-        long petmasterID = InfiniteConfig.INSTANCE.getPetmasterRoleID();
+        Role petmaster = InfiniteConfig.INSTANCE.getPetmasterRole();
         ArrayList<String> possibleReactions = new ArrayList<>();
-        possibleReactions.add(String.format("In a display of wholesome benevolence, <@%s> has been expertly pet by the skilled hands of %s.", targetId, Utils.getRoleByID(petmasterID)));
-        possibleReactions.add(String.format("<@%s> has experienced the gentle touch of a master petter, their contentment evident in every stroke.", targetId));
-        possibleReactions.add(String.format("<@%s> has experienced the gentle touch of a master petter, their spirit uplifted by the soothing strokes.", targetId));
-        possibleReactions.add(String.format("With the utmost precision, <@%s> has been pet to perfection, each gesture a testament of their importance.", targetId));
-        possibleReactions.add(String.format("Under the skilled hands of %s, <@%s> has received the most exquisite pets imaginable.", Utils.getRoleByID(petmasterID), targetId));
-        possibleReactions.add(String.format("With unparalleled finesse, <@%s> has been graced with the touch of a true petting virtuoso.", targetId));
-        possibleReactions.add(String.format("<@%s> has been honored with the tender ministrations of %s, a moment of pure bliss.", targetId, Utils.getRoleByID(petmasterID)));
-        possibleReactions.add(String.format("Under the practiced hand of %s, <@%s> has enjoyed masterful petting, finding comfort in each gentle caress.", Utils.getRoleByID(petmasterID), targetId));
-        possibleReactions.add(String.format("With each stroke, <@%s> has been reminded of the power of masterful pets.", targetId));
-        possibleReactions.add(String.format("<@%s> has been graced with masterful petting, each stroke a symphony of comfort and care.", targetId));
-        possibleReactions.add(String.format("In a moment of pure bliss, <@%s> has enjoyed the art of masterful petting, their worries melting away with each touch.", targetId));
-        possibleReactions.add(String.format("With each stroke, <@%s> has been transported to a world of serenity, the masterful petting a source of joy and comfort.", targetId));
-        possibleReactions.add(String.format("Under the watchful eye of %s, <@%s> has relished in the art of masterful petting, finding renewal and refreshment in the simple act.", Utils.getRoleByID(petmasterID), targetId));
+        possibleReactions.add(String.format("In a display of wholesome benevolence, %s has been expertly pet by the skilled hands of %s.", target, petmaster));
+        possibleReactions.add(String.format("%s has experienced the gentle touch of a master petter, their contentment evident in every stroke.", target));
+        possibleReactions.add(String.format("%s has experienced the gentle touch of a master petter, their spirit uplifted by the soothing strokes.", target));
+        possibleReactions.add(String.format("With the utmost precision, %s has been pet to perfection, each gesture a testament of their importance.", target));
+        possibleReactions.add(String.format("Under the skilled hands of %s, %s has received the most exquisite pets imaginable.", petmaster, target));
+        possibleReactions.add(String.format("With unparalleled finesse, %s has been graced with the touch of a true petting virtuoso.", target));
+        possibleReactions.add(String.format("%s has been honored with the tender ministrations of %s, a moment of pure bliss.", target, petmaster));
+        possibleReactions.add(String.format("Under the practiced hand of %s, %s has enjoyed masterful petting, finding comfort in each gentle caress.", petmaster, target));
+        possibleReactions.add(String.format("With each stroke, %s has been reminded of the power of masterful pets.", target));
+        possibleReactions.add(String.format("%s has been graced with masterful petting, each stroke a symphony of comfort and care.", target));
+        possibleReactions.add(String.format("In a moment of pure bliss, %s has enjoyed the art of masterful petting, their worries melting away with each touch.", target));
+        possibleReactions.add(String.format("With each stroke, %s has been transported to a world of serenity, the masterful petting a source of joy and comfort.", target));
+        possibleReactions.add(String.format("Under the watchful eye of %s, %s has relished in the art of masterful petting, finding renewal and refreshment in the simple act.", petmaster, target));
         return possibleReactions.get(Math.abs(rand.nextInt() % possibleReactions.size()));
     }
 
@@ -209,10 +246,12 @@ public class CommandHandler extends ListenerAdapter {
         OptionMapping channelMapping = event.getOption("channel");
         OptionMapping messageMapping = event.getOption("message");
 
+        assert channelMapping != null;
         long channelID = channelMapping.getAsChannel().getIdLong();
+        assert messageMapping != null;
         String message = messageMapping.getAsString();
 
-        Channel targetChannel = InfiniteMachine.INSTANCE.getJDA().getGuildChannelById(channelID);
+        Channel targetChannel = InfiniteConfig.INSTANCE.getJDA().getGuildChannelById(channelID);
         if (!(targetChannel instanceof TextChannel)) {
             event.reply("The specified channel is not a valid text channel.").queue();
         } else {

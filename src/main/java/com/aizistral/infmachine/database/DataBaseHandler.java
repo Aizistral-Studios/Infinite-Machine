@@ -3,6 +3,7 @@ package com.aizistral.infmachine.database;
 import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.utils.StandardLogger;
 
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,8 @@ import java.util.List;
 
 public class DataBaseHandler {
     private static final StandardLogger LOGGER = new StandardLogger("Database Handler");
-    private static final String dbUrl = "jdbc:sqlite:./database/database.db";
+    private static final String path = "./database/database.db";
+    private static final String dbUrl = "jdbc:sqlite:" + path;
 
     public static final DataBaseHandler INSTANCE = new DataBaseHandler();
 
@@ -19,11 +21,14 @@ public class DataBaseHandler {
 
     private DataBaseHandler()
     {
+        File file = new File(path);
+        if (file.getParentFile() != null) file.getParentFile().mkdirs();
         LOGGER.log("Initializing database...");
         createNewDatabase();
         Table.Builder tableBuilder = new Table.Builder("metaData");
         tableBuilder.addField("id", FieldType.LONG, true, true);
         tableBuilder.addField("infiniteVersion", FieldType.STRING, false, true);
+        tableBuilder.addField("isIndexed", FieldType.BOOLEAN, false, false);
         Table table = tableBuilder.build();
         createNewTable(table);
         LOGGER.log("Database initialization complete.");
@@ -102,7 +107,7 @@ public class DataBaseHandler {
 
     public void setInfiniteVersion(String version) {
         if(retrieveInfiniteVersion().equals(version)) return;
-        String sql = String.format("REPLACE INTO metaData (id, infiniteVersion) VALUES (1, \"%s\")", version);
+        String sql = String.format("INSERT INTO metaData (id, infiniteVersion) VALUES (1, \"%s\") ON CONFLICT(id) DO UPDATE SET infiniteVersion = \"%s\"", version, version);
         executeSQL(sql);
     }
 
@@ -111,6 +116,18 @@ public class DataBaseHandler {
         List<Map<String, Object>> results = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
         if(results.isEmpty()) return "";
         return results.get(0).get("infiniteVersion").toString();
+    }
+
+    public void setPrimalIndexation() {
+        String sql = "UPDATE metaData SET isIndexed = \"true\" WHERE id = 1";
+        executeSQL(sql);
+    }
+
+    public Boolean retrievePrimalIndexation() {
+        String sql = "SELECT * FROM metaData LIMIT 1;";
+        List<Map<String, Object>> results = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
+        if(results.isEmpty()) return false;
+        return results.get(0).get("isIndexed") != null;
     }
 
 

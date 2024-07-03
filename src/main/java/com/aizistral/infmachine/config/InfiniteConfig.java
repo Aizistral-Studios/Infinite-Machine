@@ -5,19 +5,26 @@ import java.nio.file.Paths;
 
 import com.aizistral.infmachine.data.BelieverMethod;
 
+import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.utils.StandardLogger;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 
 public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     protected static final StandardLogger LOGGER = new StandardLogger("InfiniteConfig");
 
     public static final InfiniteConfig INSTANCE = new InfiniteConfig();
 
-    private String accessToken;
+    private JDA jda;
 
-    private long votingCheckDelay;
+    private String accessToken;
     private long votingTime;
 
     private long minMessageLength;
@@ -25,23 +32,24 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     private long requiredRatingForBeliever;
     private BelieverMethod believerMethod;
 
-    private long domainID;
-    private long templeChannelID;
-    private long councilChannelID;
-    private long machineChannelID;
-    private long suggestionsChannelID;
+    private Guild domain;
+    private TextChannel templeChannel;
+    private TextChannel councilChannel;
+    private TextChannel machineChannel;
+    private TextChannel suggestionsChannel;
 
-    private long architectRoleID;
-    private long petmasterRoleID;
-    private long guardiansRoleID;
-    private long believersRoleID;
-    private long beholdersRoleID;
-    private long dwellersRoleID;
-    private long architectID;
+    private Role architectRole;
+    private Role petmasterRole;
+    private Role guardiansRole;
+    private Role believersRole;
+    private Role beholdersRole;
+    private Role dwellersRole;
+    private Role cursedRole;
+    private User architect;
 
-    private long upvoteEmojiID;
-    private long downvoteEmojiID;
-    private long crossmarkEmojiID;
+    private Emoji upvoteEmoji;
+    private Emoji downvoteEmoji;
+    private Emoji crossmarkEmoji;
 
     private InfiniteConfig() {
         super(Paths.get("./config/config.json"), 600_000L, Data.class, Data::new);
@@ -55,8 +63,10 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     @Override
     public void init() {
         this.accessToken = fetchAccessToken();
+    }
 
-        this.votingCheckDelay = fetchVotingCheckDelay();
+    public void load(JDA jda) {
+        this.jda = jda;
         this.votingTime = fetchVotingTime();
 
         this.minMessageLength = fetchMinMessageLength();
@@ -64,31 +74,40 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         this.requiredRatingForBeliever = fetchRequiredRatingForBeliever();
         this.believerMethod = fetchBelieverMethod();
 
-        this.domainID = fetchDomainID();
-        this.templeChannelID = fetchTempleChannelID();
-        this.councilChannelID = fetchCouncilChannelID();
-        this.machineChannelID = fetchMachineChannelID();
-        this.suggestionsChannelID = fetchSuggestionsChannelID();
+        this.domain = jda.getGuildById(fetchDomainID());
+        if (this.domain == null) {
+            LOGGER.error("Architects Domain could not be located. Is the machine not there yet?");
+            System.exit(ExitCode.MISSING_DOMAIN_ERROR.getCode());
+        }
 
-        this.architectRoleID = fetchArchitectRoleID();
-        this.petmasterRoleID = fetchPetmasterRoleID();
-        this.guardiansRoleID = fetchGuardiansRoleID();
-        this.believersRoleID = fetchBelieversRoleID();
-        this.beholdersRoleID = fetchBeholdersRoleID();
-        this.dwellersRoleID = fetchDwellersRoleID();
-        this.architectID = fetchArchitectID();
+        this.templeChannel = domain.getTextChannelById(fetchTempleChannelID());
+        this.councilChannel = domain.getTextChannelById(fetchCouncilChannelID());
+        this.machineChannel = domain.getTextChannelById(fetchMachineChannelID());
+        this.suggestionsChannel = domain.getTextChannelById(fetchSuggestionsChannelID());
 
-        this.upvoteEmojiID = fetchUpvoteEmojiID();
-        this.downvoteEmojiID = fetchDownvoteEmojiID();
-        this.crossmarkEmojiID = fetchCrossmarkEmojiID();
+        this.architectRole = domain.getRoleById(fetchArchitectRoleID());
+        this.petmasterRole = domain.getRoleById(fetchPetmasterRoleID());
+        this.guardiansRole = domain.getRoleById(fetchGuardiansRoleID());
+        this.believersRole = domain.getRoleById(fetchBelieversRoleID());
+        this.beholdersRole = domain.getRoleById(fetchBeholdersRoleID());
+        this.dwellersRole = domain.getRoleById(fetchDwellersRoleID());
+        this.cursedRole = domain.getRoleById((fetchCursedRoleID()));
+        this.architect = jda.retrieveUserById(fetchArchitectID()).complete();
+
+        this.upvoteEmoji = domain.getEmojiById(fetchUpvoteEmojiID());
+        this.downvoteEmoji = domain.getEmojiById(fetchDownvoteEmojiID());
+        this.crossmarkEmoji = domain.getEmojiById(fetchCrossmarkEmojiID());
+        forceSave();
+    }
+
+
+
+    public JDA getJDA() {
+        return jda;
     }
 
     public String getAccessToken() {
         return accessToken;
-    }
-
-    public long getVotingCheckDelay() {
-        return votingCheckDelay;
     }
 
     public long getVotingTime() {
@@ -111,64 +130,68 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         return believerMethod;
     }
 
-    public long getDomainID() {
-        return domainID;
+    public Guild getDomain() {
+        return domain;
     }
 
-    public long getTempleChannelID() {
-        return templeChannelID;
+    public TextChannel getTempleChannel() {
+        return templeChannel;
     }
 
-    public long getCouncilChannelID() {
-        return councilChannelID;
+    public TextChannel getCouncilChannel() {
+        return councilChannel;
     }
 
-    public long getMachineChannelID() {
-        return machineChannelID;
+    public TextChannel getMachineChannel() {
+        return machineChannel;
     }
 
-    public long getSuggestionsChannelID() {
-        return suggestionsChannelID;
+    public TextChannel getSuggestionsChannel() {
+        return suggestionsChannel;
     }
 
-    public long getArchitectRoleID() {
-        return architectRoleID;
+    public Role getArchitectRole() {
+        return architectRole;
     }
 
-    public long getPetmasterRoleID() {
-        return petmasterRoleID;
+    public Role getPetmasterRole() {
+        return petmasterRole;
     }
 
-    public long getGuardiansRoleID() {
-        return guardiansRoleID;
+    public Role getGuardiansRole() {
+        return guardiansRole;
     }
 
-    public long getBelieversRoleID() {
-        return believersRoleID;
+    public Role getBelieversRole() {
+        return believersRole;
     }
 
-    public long getBeholdersRoleID() {
-        return beholdersRoleID;
+    public Role getBeholdersRole() {
+        return beholdersRole;
     }
 
-    public long getDwellersRoleID() {
-        return dwellersRoleID;
+    public Role getDwellersRole() {
+        return dwellersRole;
     }
 
-    public long getArchitectID() {
-        return architectID;
+    public Role getCursedRole() {
+        return cursedRole;
     }
 
-    public long getUpvoteEmojiID() {
-        return upvoteEmojiID;
+    public User getArchitect() {
+        return architect;
     }
 
-    public long getDownvoteEmojiID() {
-        return downvoteEmojiID;
+    public Emoji getUpvoteEmoji() {
+        return upvoteEmoji;
     }
 
-    public long getCrossmarkEmojiID() {
-        return crossmarkEmojiID;
+    public Emoji getDownvoteEmoji() {
+        return downvoteEmoji;
+    }
+
+    public Emoji getCrossmarkEmoji() {
+        return crossmarkEmoji;
     }
 
     // --------------------- //
@@ -184,19 +207,10 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         }
     }
 
-    private long fetchVotingCheckDelay() {
-        try {
-            this.readLock.lock();
-            return this.getData().votingCheckDelay;
-        } finally {
-            this.readLock.unlock();
-        }
-    }
-
     private long fetchVotingTime() {
         try {
             this.readLock.lock();
-            return this.getData().votingTime;
+            return this.getData().votingTimeInHours;
         } finally {
             this.readLock.unlock();
         }
@@ -292,6 +306,15 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         }
     }
 
+    private long fetchCursedRoleID() {
+        try {
+            this.readLock.lock();
+            return this.getData().cursedRoleID;
+        } finally {
+            this.readLock.unlock();
+        }
+    }
+
     private long fetchDwellersRoleID() {
         try {
             this.readLock.lock();
@@ -373,14 +396,15 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         }
     }
 
+
+
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private String accessToken = "";
-        private long votingCheckDelay = 60_000L;
-        private long votingTime = 60_000L;
+        private long votingTimeInHours = 1;
         private long minMessageLength = 0;
         private long requiredMessagesForBeliever = 300;
-        private long requiredRatingForBeliever = 1500;
+        private long requiredRatingForBeliever = 3750000;
         private BelieverMethod believerMethod = BelieverMethod.RATING;
         private long domainID = 757941072449241128L;
         private long templeChannelID = 953374742457499659L;
@@ -388,6 +412,7 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
         private long councilChannelID = 1133412399936970802L;
         private long suggestionsChannelID = 986594094270795776L;
         private long believersRoleID = 771377288927117342L;
+        private long cursedRoleID = 1157706494695985275L;
         private long dwellersRoleID = 964930040359964752L;
         private long beholdersRoleID = 964940092215021678L;
         private long architectRoleID = 757943753779445850L;

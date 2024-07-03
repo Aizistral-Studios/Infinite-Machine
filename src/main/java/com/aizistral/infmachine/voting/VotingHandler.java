@@ -1,6 +1,5 @@
 package com.aizistral.infmachine.voting;
 
-import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.data.ExitCode;
@@ -10,9 +9,9 @@ import com.aizistral.infmachine.database.Table;
 import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
 
+import com.aizistral.infmachine.utils.Utils;
 import lombok.Getter;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
@@ -42,7 +41,7 @@ public class VotingHandler extends ListenerAdapter {
     public static final VotingHandler INSTANCE = new VotingHandler();
 
     @Getter
-    private TextChannel councilChannel = null;
+    private final TextChannel councilChannel;
     private final DataBaseHandler databaseHandler;
     @Getter
     private final String votingTableName = "voting";
@@ -51,23 +50,15 @@ public class VotingHandler extends ListenerAdapter {
 
 
     private VotingHandler() {
-        Channel channel = InfiniteMachine.INSTANCE.getJDA().getGuildChannelById(InfiniteConfig.INSTANCE.getCouncilChannelID());
-        if(channel instanceof TextChannel) {
-            this.councilChannel = (TextChannel) channel;
-        }
+        this.councilChannel = InfiniteConfig.INSTANCE.getCouncilChannel();
         this.databaseHandler = DataBaseHandler.INSTANCE;
         createVotingTable();
         createBelieverTable();
-        InfiniteMachine.INSTANCE.getJDA().addEventListener(this);
+        InfiniteConfig.INSTANCE.getJDA().addEventListener(this);
 
         votingChecker = new VotingChecker(
-            () -> {
-                //InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("All registered votings have been checked and updated.")).queue();
-                LOGGER.log("All registered votings have been checked and updated.");
-            },
-            () -> {
-                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Registered votings could not be checked.")).queue();
-            }
+            () -> LOGGER.log("All registered votings have been checked and updated."),
+            () -> InfiniteConfig.INSTANCE.getMachineChannel().sendMessage("Registered votings could not be checked.").queue()
         );
     }
 
@@ -82,15 +73,13 @@ public class VotingHandler extends ListenerAdapter {
     }
 
     private void updateBelieverDatabaseWithCurrentBelievers() {
-        Role believerRole = InfiniteMachine.INSTANCE.getDomain().getRoleById(InfiniteConfig.INSTANCE.getBelieversRoleID());
-        InfiniteMachine.INSTANCE.getDomain().findMembersWithRoles(believerRole).onSuccess(list -> {
-            list.forEach(member -> {
-                if(!isBeliever(member.getIdLong())) {
-                    promoteBelieverInDatabase(member.getIdLong());
-                    LOGGER.log(String.format("Updated database believer status for %s.", member.getEffectiveName()));
-                }
-            });
-        });
+        Role believerRole = InfiniteConfig.INSTANCE.getDomain().getRoleById(InfiniteConfig.INSTANCE.getBelieversRole().getIdLong());
+        InfiniteConfig.INSTANCE.getDomain().findMembersWithRoles(believerRole).onSuccess(list -> list.forEach(member -> {
+            if(!isBeliever(member.getIdLong())) {
+                promoteBelieverInDatabase(member.getIdLong());
+                LOGGER.log(String.format("Updated database believer status for %s.", member.getEffectiveName()));
+            }
+        }));
     }
 
     @Override
@@ -110,7 +99,7 @@ public class VotingHandler extends ListenerAdapter {
         LOGGER.log("Button was pressed.");
         event.deferReply().setEphemeral(true).queue();
         List<Role> roles = Objects.requireNonNull(event.getMember()).getRoles();
-        Role architectRole = Objects.requireNonNull(event.getGuild()).getRoleById(InfiniteConfig.INSTANCE.getArchitectRoleID());
+        Role architectRole = Objects.requireNonNull(event.getGuild()).getRoleById(InfiniteConfig.INSTANCE.getArchitectRole().getIdLong());
         Role overseerRole = Objects.requireNonNull(event.getGuild()).getRoleById(1145688360543862785L);
         Map<String, Object> registeredVote = fetchRegisteredVoteByID(event.getMessage().getIdLong());
         if (roles.contains(architectRole) || roles.contains(overseerRole)) {
@@ -151,13 +140,13 @@ public class VotingHandler extends ListenerAdapter {
     public void createVoteIfNeeded(@NotNull User user) {
         long userID = user.getIdLong();
         if(isBeliever(userID)) return;
-        if(!needVote(userID)) return;
+        if(!needVote(user)) return;
         createVoting(VotingType.BELIEVER_PROMOTION.toString(), user, false);
     }
 
-    private boolean needVote(long userID) {
+    private boolean needVote(User user) {
+        long userID = user.getIdLong();
         if(hasVoting(userID)) return false;
-        if(userID == 866354348489572352L) return true;
         long voteCount = getVoteAmount(userID);
         long messageCount = CoreMessageIndexer.INSTANCE.getNumberOfMessagesByUserID(userID);
         long totalRating = CoreMessageIndexer.INSTANCE.getRating(userID);
@@ -183,8 +172,13 @@ public class VotingHandler extends ListenerAdapter {
     }
 
     public boolean createVoting(String type, User votingTarget, boolean isForced) {
-        if(!isMemberInDomain(votingTarget) || isTheArchitect(votingTarget)) return false;
-        String votingInformation = "";
+        if(isTheArchitect(votingTarget)) return false;
+        Member member = Utils.userToMember(votingTarget);
+        if(member == null || isCursed(member)){
+            addBelieverVoteCount(votingTarget.getIdLong(), 1);
+            return false;
+        }
+        String votingInformation;
         String positiveAnswerDescription;
         String negativeAnswerDescription;
         if (type.equals(VotingType.BELIEVER_PROMOTION.toString()) && !isForced) {
@@ -206,7 +200,7 @@ public class VotingHandler extends ListenerAdapter {
         MessagePollData poll = MessagePollData.builder("Do you agree with this Voting?")
                 .addAnswer(positiveAnswerDescription, Emoji.fromFormatted("<:upvote:946944717982142464>"))
                 .addAnswer(negativeAnswerDescription, Emoji.fromFormatted("<:downvote:946944748491522098>"))
-                .setDuration(2, TimeUnit.DAYS)
+                .setDuration(InfiniteConfig.INSTANCE.getVotingTime(), TimeUnit.HOURS)
                 .build();
 
         if(councilChannel != null)
@@ -226,22 +220,18 @@ public class VotingHandler extends ListenerAdapter {
         return false;
     }
 
-
-
-    private boolean isMemberInDomain(User user) {
-        return InfiniteMachine.INSTANCE.getDomain().isMember(user);
+    private boolean isCursed(Member member) {
+        return member.getRoles().contains(InfiniteConfig.INSTANCE.getCursedRole());
     }
     private boolean isTheArchitect(User user) {
-        return user.getIdLong() == 545239329656799232L;
+        return user.getIdLong() == InfiniteConfig.INSTANCE.getArchitect().getIdLong();
     }
 
     private void addVotingDiscussionThread(Message message, User votingTarget) {
         String date = LocalDateTime.now().format(FORMATTER);
         String name = votingTarget.getEffectiveName();
         String threadName = Localization.translate("title.votingThread",name, date);
-        message.createThreadChannel(threadName).queue(c -> {
-                    //c.sendMessage("May your vote be cast in good spirit and with honest intention.").queue();
-                });
+        message.createThreadChannel(threadName).queue(c -> c.sendMessage("May your vote be cast in good spirit and with honest intention.").queue());
 
     }
 
@@ -281,11 +271,9 @@ public class VotingHandler extends ListenerAdapter {
             System.exit(ExitCode.PROGRAM_LOGIC_ERROR.getCode());
         }
 
-        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        Guild domain = InfiniteConfig.INSTANCE.getDomain();
         VotingType finalVotingType = votingType;
-        domain.retrieveMemberById((long) vote.get("voteTargetID")).queue(member -> {
-            finalExecution(message, wasSuccessful, member, finalVotingType, wasOverruled);
-        });
+        domain.retrieveMemberById((long) vote.get("voteTargetID")).queue(member -> finalExecution(message, wasSuccessful, member, finalVotingType, wasOverruled));
     }
 
     private void finalExecution(Message message, boolean wasSuccessful, Member member, VotingType finalVotingType, boolean wasOverruled) {
@@ -310,9 +298,9 @@ public class VotingHandler extends ListenerAdapter {
             LOGGER.log("Member was not found in guild. Can't add role.");
             return;
         }
-        Guild domain = InfiniteMachine.INSTANCE.getDomain();
-        Role believerRole = domain.getRoleById(InfiniteConfig.INSTANCE.getBelieversRoleID());
-        Role mereDwellerRole = domain.getRoleById((InfiniteConfig.INSTANCE.getDwellersRoleID()));
+        Guild domain = InfiniteConfig.INSTANCE.getDomain();
+        Role believerRole = domain.getRoleById(InfiniteConfig.INSTANCE.getBelieversRole().getIdLong());
+        Role mereDwellerRole = domain.getRoleById((InfiniteConfig.INSTANCE.getDwellersRole().getIdLong()));
         changeRoleOnMember(believerRole, member, isPromotion);
         changeRoleOnMember(mereDwellerRole, member, !isPromotion);
     }
@@ -323,7 +311,7 @@ public class VotingHandler extends ListenerAdapter {
             System.exit(ExitCode.PROGRAM_LOGIC_ERROR.getCode());
             return;
         }
-        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        Guild domain = InfiniteConfig.INSTANCE.getDomain();
         if(add) {
             domain.addRoleToMember(member, role).queue(
                     success -> LOGGER.log("Role added successfully."),
@@ -445,7 +433,7 @@ public class VotingHandler extends ListenerAdapter {
         String sql = String.format("SELECT * FROM %s WHERE memberID = %d", believerTableName, userID);
         List<Map<String, Object>> results = databaseHandler.executeQuerySQL(sql);
         if(results.isEmpty()) return false;
-        return "true".equals((String) results.get(0).get("isBeliever"));
+        return "true".equals(results.get(0).get("isBeliever"));
     }
 
 

@@ -1,6 +1,5 @@
 package com.aizistral.infmachine.indexation;
 
-import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.utils.StandardLogger;
@@ -35,14 +34,17 @@ public class ExhaustiveMessageIndexer implements Runnable{
     public ExhaustiveMessageIndexer(Runnable callbackOnSuccess, Runnable callbackOnFailure) {
         this.callbackOnSuccess = callbackOnSuccess;
         this.callbackOnFailure = callbackOnFailure;
-        setFullIndex(false);
+        //sets the full index to true on the very first indexation run
+        // and then sets the database into a state where the first indexation has been completed
+        // once the indexation runner has successfully indexed for the first time
+        setFullIndex(!DataBaseHandler.INSTANCE.retrievePrimalIndexation());
         LOGGER.log("ExhaustiveIndexer ready, awaiting orders.");
     }
     @Override
     public void run() {
         this.continueRunning = true;
         try{
-            InfiniteMachine.INSTANCE.getMachineChannel().sendMessage("Starting Indexation...").complete();
+            InfiniteConfig.INSTANCE.getMachineChannel().sendMessage("Starting Indexation...").complete();
             executeReindex();
             callbackOnSuccess.run();
             LOGGER.log("Indexation completed. Full success");
@@ -63,6 +65,7 @@ public class ExhaustiveMessageIndexer implements Runnable{
         indexAllMessages(isFullIndex);
         LOGGER.log("Indexation completed. Resuming normal operations.");
         setFullIndex(false);
+        DataBaseHandler.INSTANCE.setPrimalIndexation();
     }
 
     public void setFullIndex(boolean isFullIndex) {
@@ -150,7 +153,7 @@ public class ExhaustiveMessageIndexer implements Runnable{
     // Domain Evaluation //
     // ----------------- //
     private List<GuildMessageChannel> collectGuildChannels(boolean fullIndex) {
-        Guild domain = InfiniteMachine.INSTANCE.getDomain();
+        Guild domain = InfiniteConfig.INSTANCE.getDomain();
 
         List<GuildMessageChannel> channels = new ArrayList<>();
 

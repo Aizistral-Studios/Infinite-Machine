@@ -9,11 +9,12 @@ import com.aizistral.infmachine.utils.StandardLogger;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public final class Main {
     private static final StandardLogger LOGGER = new StandardLogger("MachineBootstrap");
-    static final JDA JDA;
+    public static final JDA JDA;
 
     static {
         LOGGER.log("Starting up the Infinite Machine...");
@@ -40,6 +41,12 @@ public final class Main {
         builder.setActivity(Activity.watching(Localization.translate("activity.watching")));
 
         JDA = builder.build();
+        try {
+            JDA.awaitReady();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        InfiniteConfig.INSTANCE.load(JDA);
     }
 
     public static void main(String... args) throws Exception {

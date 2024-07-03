@@ -2,6 +2,7 @@ package com.aizistral.infmachine.config;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -71,6 +72,8 @@ public abstract class JsonHandler<T> {
             LOGGER.log("Reading %s...", this.file.getFileName().toString());
 
             this.init = true;
+            File file = new File(this.file.toString());
+            if (file.getParentFile() != null) file.getParentFile().mkdirs();
             Files.createDirectories(this.file.getParent());
 
             this.data = readFile(this.file, this.dataClass).orElseGet(() -> {

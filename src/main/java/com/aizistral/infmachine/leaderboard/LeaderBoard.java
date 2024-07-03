@@ -1,6 +1,7 @@
 package com.aizistral.infmachine.leaderboard;
 
 import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.indexation.CoreMessageIndexer;
 import com.aizistral.infmachine.utils.StandardLogger;
@@ -34,7 +35,7 @@ public class LeaderBoard {
         int i = start;
         for (Map<String, Object> entry : leaderBoard) {
             long authorID = Long.parseLong(entry.get("authorID").toString());
-            User user = InfiniteMachine.INSTANCE.getJDA().retrieveUserById(authorID).complete();
+            User user = InfiniteConfig.INSTANCE.getJDA().retrieveUserById(authorID).complete();
             String name = user.getEffectiveName();
             stringBuilder.append(String.format("%d. **%s** (<@%d>): ", i++, name, user.getIdLong()));
             Long messages = Long.parseLong(entry.get("totalMessages").toString());

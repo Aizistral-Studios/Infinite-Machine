@@ -1,8 +1,9 @@
 package com.aizistral.infmachine.indexation;
 
-import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.utils.StandardLogger;
 
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
 import net.dv8tion.jda.api.events.message.GenericMessageEvent;
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -14,7 +15,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
     private static final StandardLogger LOGGER = new StandardLogger("Realtime Message Indexer");
 
     public RealtimeMessageIndexer(){
-        InfiniteMachine.INSTANCE.getJDA().addEventListener(this);
+        InfiniteConfig.INSTANCE.getJDA().addEventListener(this);
         LOGGER.log("Registered event listener.");
         LOGGER.log("RealtimeIndexer ready.");
     }
@@ -35,7 +36,7 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
     }
 
     @Override
-    public void onMessageUpdate(@NotNull MessageUpdateEvent event) { //ToDo Check whether this works as intended or change if necessary
+    public void onMessageUpdate(@NotNull MessageUpdateEvent event) {
         if(isValidMessageEvent(event)) {
             CoreMessageIndexer.INSTANCE.indexMessage(event.getMessage());
         }
@@ -44,7 +45,15 @@ public class RealtimeMessageIndexer extends ListenerAdapter {
     public boolean isValidMessageEvent(GenericMessageEvent messageEvent)
     {
         if (!messageEvent.isFromGuild()) return false;
-        if (messageEvent.getGuild() != InfiniteMachine.INSTANCE.getDomain()) return false;
+        if (messageEvent.getGuild() != InfiniteConfig.INSTANCE.getDomain()) return false;
         return true;
+    }
+
+    @Override
+    public void onChannelDelete(@NotNull ChannelDeleteEvent event){
+        LOGGER.log("Channel Deleted");
+        if(event.isFromGuild() && event.getGuild() == InfiniteConfig.INSTANCE.getDomain()) {
+            CoreMessageIndexer.INSTANCE.unindexChannel(event.getChannel().getIdLong());
+        }
     }
 }

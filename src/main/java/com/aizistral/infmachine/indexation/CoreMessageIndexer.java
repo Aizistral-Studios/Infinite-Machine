@@ -1,6 +1,6 @@
 package com.aizistral.infmachine.indexation;
 
-import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.database.DataBaseHandler;
 import com.aizistral.infmachine.database.FieldType;
 import com.aizistral.infmachine.database.Table;
@@ -33,12 +33,8 @@ public class CoreMessageIndexer {
         prepareDatabase();
         this.realtimeMessageIndexer = new RealtimeMessageIndexer();
         this.exhaustiveMessageIndexer = new ExhaustiveMessageIndexer(
-            () -> {
-                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Convergence achieved. All data accounted for.")).queue();
-            },
-            () -> {
-                InfiniteMachine.INSTANCE.getMachineChannel().sendMessage(String.format("Indexer encountered critical error. Please restart process.")).queue();
-            }
+            () -> InfiniteConfig.INSTANCE.getMachineChannel().sendMessage("Convergence achieved. All data accounted for.").queue(),
+            () -> InfiniteConfig.INSTANCE.getMachineChannel().sendMessage("Indexer encountered critical error. Please restart process.").queue()
         );
         LOGGER.log("CoreMessageIndexer instantiated.");
     }
@@ -51,16 +47,10 @@ public class CoreMessageIndexer {
         exhaustiveMessageIndexer.stop();
         clearTable();
         exhaustiveMessageIndexer.setFullIndex(true);
-        startExhaustiveIndexRunner();
+        index();
     }
 
     public void index() {
-        exhaustiveMessageIndexer.stop();
-        exhaustiveMessageIndexer.setFullIndex(false);
-        startExhaustiveIndexRunner();
-    }
-
-    private void startExhaustiveIndexRunner() {
         createMessageIndexTable();
         Thread exhaustiveIndexer = new Thread(exhaustiveMessageIndexer, "IndexerCatchUp-Thread");
         exhaustiveIndexer.start();
@@ -89,6 +79,11 @@ public class CoreMessageIndexer {
 
     public void unindexMessage(long deletedMessageID) {
         String sql = String.format("DELETE FROM %s WHERE messageID = %d", indexTableName, deletedMessageID);
+        databaseHandler.executeSQL(sql);
+    }
+
+    public void unindexChannel(long deletedChannelID) {
+        String sql = String.format("DELETE FROM %s WHERE channelID = %d", indexTableName, deletedChannelID);
         databaseHandler.executeSQL(sql);
     }
 
@@ -127,8 +122,7 @@ public class CoreMessageIndexer {
         String sql = String.format("SELECT SUM(messageRating) as rating FROM %s WHERE authorID = %d",CoreMessageIndexer.INSTANCE.getIndexTableName(), authorID);
         List<Map<String, Object>> entries = DataBaseHandler.INSTANCE.executeQuerySQL(sql);
         if(entries == null) return 0;
-        long internalRating =  ((Integer) entries.get(0).get("rating")).longValue();
-        return internalRating;
+        return ((Integer) entries.get(0).get("rating")).longValue();
     }
 
     private void clearTable() {
@@ -150,10 +144,10 @@ public class CoreMessageIndexer {
         return true;
     }
 
-    // TODO Test for Voice-messages :: Possibly add content evaluation (Filter for word variety)
-    // TODO change scope to private once the indexation rework is complete
-    public static long evaluateMessage(Message messageRaw) {
-        if (messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
+    // TODO Test for Voice-messages
+    private static long evaluateMessage(Message messageRaw) {
+        if(messageRaw.getType().equals(MessageType.SLASH_COMMAND)) return 0;
+        if(messageRaw.getContentRaw().length() < InfiniteConfig.INSTANCE.getMinMessageLength()) return 0;
 
         // linkLengthValueInChars describes the flat amount of chars that a Link will
         // contribute to a message Rating
@@ -166,4 +160,6 @@ public class CoreMessageIndexer {
 
         return length * length;
     }
+
+
 }
