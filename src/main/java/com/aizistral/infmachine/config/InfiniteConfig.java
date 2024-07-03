@@ -401,7 +401,7 @@ public class InfiniteConfig extends JsonHandler<InfiniteConfig.Data> {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     static final class Data {
         private String accessToken = "";
-        private long votingTimeInHours = 1;
+        private long votingTimeInHours = 48;
         private long minMessageLength = 0;
         private long requiredMessagesForBeliever = 300;
         private long requiredRatingForBeliever = 3750000;
