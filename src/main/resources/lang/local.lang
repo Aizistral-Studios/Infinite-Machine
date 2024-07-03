@@ -5,16 +5,17 @@ cmd.uptime.desc=Display how long the machine have been awake for
 cmd.version.desc=Display current version of the machine
 cmd.pet.desc=Pet the specified creature
 cmd.pet.user=The creature to pet
-cmd.setindexmode.desc=Change current message indexing mode
-cmd.setindexmode.mode=Indexing mode: %s
-cmd.getindexmode.desc=View current message indexing mode
+cmd.sendmessage.desc=Send a message into a channel as the bot.
+cmd.sendmessage.channel=The channel the message should be send to.
+cmd.sendmessage.message=The message that should be send.
 cmd.terminate.desc=Halt and catch fire
-cmd.leaderboard.desc=Show top-10 people in the server by message count
+cmd.leaderboard.desc=Show top-10 people in the server by rating
 cmd.leaderboard.order=Leaderboard Order: %s
 cmd.leaderboard.start=Start listing people from this position
-cmd.rating.desc=Show user's position in leaderboard by message count
+cmd.rating.desc=Show user's position in leaderboard and other interesting stats
 cmd.rating.user=User to show the position of
-cmd.clearindex.desc=Clear all previous message indexation and counts
+cmd.fullindex.desc=Drops database and orders a full reindex of the entire server.
+cmd.getmostactive.desc=Displays the most active users ordered by messages
 cmd.openvoting.desc=Vote on specified user
 cmd.openvoting.user=What user is this voting for
 cmd.openvoting.type=Voting type: %s
@@ -23,31 +24,31 @@ title.votingThread=Voting on %s (%s)
 
 msg.votingStandard=For now a mere dweller, %s has proven worthy of attention, sending **%s messages** across The Architect's Domain. The time has come to decide their fate: should they be accepted as one of devoted believers, or remain a mere dweller that they are?\n\nI summon the <@&1133729791862911037> to hold this voting. You may support the decision to accept them into our ranks by leaving an upvote <:upvote:946944717982142464>, or express your opposition with a downvote <:downvote:946944748491522098>. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
 
-msg.votingForced=<@&757943753779445850> himself has recognized the potential of %s, and believes we must consider accepting them as one of devoted believers. It is your duty and honor to assist him in making this decision.\n\nI summon the <@&1133729791862911037> to hold this voting. You may support the decision to accept the candidate into our ranks by leaving an upvote <:upvote:946944717982142464>, or express your opposition with a downvote <:downvote:946944748491522098>. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
+msg.promotionVotingForced=<@&757943753779445850> himself has recognized the potential of %s, and believes we must consider accepting them as one of devoted believers. It is your duty and honor to assist him in making this decision.\n\nI summon the <@&1133729791862911037> to hold this voting. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
 
-msg.votingElapsedPositive=Voting for %s is complete, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
+msg.promotionVotingElapsedPositive=Voting for %s is complete, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
 
-msg.votingElapsedNegative=Voting for %s is complete, and they were denied the title of a Devoted Believer. Perhaps another time...
+msg.promotionVotingElapsedNegative=Voting for %s is complete, and they were denied the title of a Devoted Believer. Perhaps another time...
 
-msg.votingOverruledPositive=<@&757943753779445850> himself overruled the voting for %s, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
+msg.promotionVotingOverruledPositive=<@&757943753779445850> himself overruled the voting for %s, and they were chosen to receive the title of a Devoted Believer. Welcome them in our ranks!
 
-msg.votingOverruledNegative=<@&757943753779445850> himself overruled the voting for %s, and they were denied the title of a Devoted Believer. Perhaps another time...
+msg.promotionVotingOverruledNegative=<@&757943753779445850> himself overruled the voting for %s, and they were denied the title of a Devoted Believer. Perhaps another time...
 
-msg.votingLeft=Voting on <@%s> is complete, but it appears they have left The Architect's Domain. Let us all bid farewell.
+msg.votingLeft=Voting on <@%s> is complete, but it appears they have left The Architect's Domain.
 
 msg.believerOnboarding=<@%s>, I greet you among the <@&771377288927117342>! Your presence and activity across The Architect's Domain were recognized, and it was decided to award you this honorable title.\n\nAs one of the believers, you may enjoy greater proximity to The Architect and his works, and access to channels beyond the reach of mere dwellers, this one included. You may also choose to join the <@&1133729791862911037> and participate in votings that are held to decide whether other people of notice should be accepted as believers; see <#1133412399936970802> and its pinned posts for more details on that.\n\nFurthermore, if you happen to be the enjoyer of a particular work of The Architect known as Enigmatic Legacy, you may obtain access to unique item in that mod known as **The Architect's Favor**, which is only visible to and usable by the believers. Although it is beyond my power to grant you such access here and now, feel free to poke <@&757943753779445850> himself regarding this matter.\n\nMay your presence here be as enjoyable for you as it is for us.
 
-msg.revokationVoting=<@&757943753779445850> himself believes %s's transgressions warrant exilement from the halls of the <#953374742457499659>. He has called upon us to help him make this decision, and we shall reply.\n\nI summon the <@&1133729791862911037> to hold this voting. You may support the decision to exile the offender from our ranks by leaving an upvote <:upvote:946944717982142464>, or express your opposition with a downvote <:downvote:946944748491522098>. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
+msg.demotionVotingForced=<@&757943753779445850> himself believes %s's transgressions warrant exilement from the halls of the <#953374742457499659>. He has called upon us to help him make this decision, and we shall reply.\n\nI summon the <@&1133729791862911037> to hold this voting. In two days from now, the outcome shall be sealed.\n\nMay your vote be cast in good spirit and with honest intention!
 
-msg.revokationVotingElapsedPositive=The council has spoken, and %s is now exiled from our ranks. May they learn from their mistakes, and one day, perhaps, they will find redemption.
+msg.demotionVotingElapsedPositive=The council has spoken, and %s is now exiled from our ranks. May they learn from their mistakes, and one day, perhaps, they will find redemption.
 
-msg.revokationVotingElapsedNegative=The council has voted against the exilement of %s from our ranks. Although their stay is yet allowed, we must remain vigilant.
+msg.demotionVotingElapsedNegative=The council has voted against the exilement of %s from our ranks. Although their stay is yet allowed, we must remain vigilant.
 
-msg.revokationVotingOverruledPositive=<@&757943753779445850>'s patience has been exhausted, and by his decree the exilement of %s from our ranks is enacted immediately. May it teach them and all of us a lesson.
+msg.demotionVotingOverruledPositive=<@&757943753779445850>'s patience has been exhausted, and by his decree the exilement of %s from our ranks is enacted immediately. May it teach them and all of us a lesson.
 
-msg.revokationVotingOverruledNegative=<@&757943753779445850> has reconsidered, and this voting is cancelled in accordance with his decision.
+msg.demotionVotingOverruledNegative=<@&757943753779445850> has reconsidered, and this voting is cancelled in accordance with his decision.
 
-msg.revokationPersonal=It is my duty to inform you that in the light of your transgressions, you have lost the title of a devoted believer within The Architect's Domain. You are now considered a mere dweller. The Architect teaches us that any soul may earn redemption, however hopeless it may appear... May you one day find yours.
+msg.demotionPersonal=It is my duty to inform you that in the light of your transgressions, you have lost the title of a devoted believer within The Architect's Domain. You are now considered a mere dweller. The Architect teaches us that any soul may earn redemption, however hopeless it may appear... May you one day find yours.
 
 msg.wrongCommandChannel=It is the wrong space and time...
 msg.pong=Pong!
