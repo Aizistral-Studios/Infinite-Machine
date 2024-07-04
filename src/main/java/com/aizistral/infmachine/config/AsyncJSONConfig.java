@@ -2,8 +2,8 @@ package com.aizistral.infmachine.config;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,9 +13,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
-import com.aizistral.infmachine.data.ExitCode;
 import org.jetbrains.annotations.NotNull;
 
+import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.utils.StandardLogger;
 import com.google.common.base.Supplier;
 import com.google.gson.Gson;
@@ -23,7 +23,7 @@ import com.google.gson.GsonBuilder;
 
 import lombok.SneakyThrows;
 
-public abstract class JsonHandler<T> {
+public abstract class AsyncJSONConfig<T> {
     private static final StandardLogger LOGGER = new StandardLogger("JsonHandler");
     protected static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
@@ -41,7 +41,7 @@ public abstract class JsonHandler<T> {
     private T data = null;
 
     @SneakyThrows
-    protected JsonHandler(Path filePath, long saveDelay, Class<T> dataClass, Supplier<T> dataFactory) {
+    protected AsyncJSONConfig(Path filePath, long saveDelay, Class<T> dataClass, Supplier<T> dataFactory) {
         this.file = filePath.toFile().getCanonicalFile().toPath();
         this.dataFactory = dataFactory;
         this.saveDelay = saveDelay;
@@ -54,7 +54,14 @@ public abstract class JsonHandler<T> {
 
     private void saveCheck() {
         while (true) {
-            if (this.needsSaving.get()) forceSave();
+            if (this.needsSaving.getAndSet(false)) {
+                try {
+                    this.saveFile();
+                } catch (IOException ex) {
+                    InfiniteMachine.INSTANCE.terminate(ex);
+                }
+            }
+
             try {
                 Thread.sleep(this.saveDelay);
             } catch (InterruptedException ex) {
@@ -67,13 +74,12 @@ public abstract class JsonHandler<T> {
         try {
             this.writeLock.lock();
 
-            if (this.init) throw new IllegalStateException("Init was already called");
+            if (this.init)
+                throw new IllegalStateException("Init was already called");
 
             LOGGER.log("Reading %s...", this.file.getFileName().toString());
 
             this.init = true;
-            File file = new File(this.file.toString());
-            if (file.getParentFile() != null) file.getParentFile().mkdirs();
             Files.createDirectories(this.file.getParent());
 
             this.data = readFile(this.file, this.dataClass).orElseGet(() -> {
@@ -97,17 +103,17 @@ public abstract class JsonHandler<T> {
             this.needsSaving.set(false);
             this.saveFile();
         } catch (IOException ex) {
-            LOGGER.error("Forced save encountered fatal error. Terminating...");
-            System.exit(ExitCode.CONFIG_ERROR.getCode());
+            InfiniteMachine.INSTANCE.terminate(ex);
         }
     }
 
     @NotNull
     protected T getData() {
         if (this.data == null) {
-            LOGGER.error("Data is not available. Terminating...");
-            System.exit(ExitCode.CONFIG_ERROR.getCode());
+            InfiniteMachine.INSTANCE.terminate(new RuntimeException("Fatal JSON error, "
+                    + "tried to get data with no data loaded"));
         }
+
         return this.data;
     }
 
@@ -130,7 +136,8 @@ public abstract class JsonHandler<T> {
         } catch (Exception ex) {
             LOGGER.error("Could not read file: %s", file);
             LOGGER.error("This likely indicates the file is corrupted. Full stacktrace:", ex);
-            System.exit(ExitCode.CONFIG_ERROR.getCode());
+
+            InfiniteMachine.INSTANCE.terminate(new RuntimeException(ex));
             return Optional.empty();
         }
     }
@@ -143,7 +150,7 @@ public abstract class JsonHandler<T> {
             }
         } catch (Exception ex) {
             LOGGER.log("Could not write config file: %s", file);
-            System.exit(ExitCode.CONFIG_ERROR.getCode());
+            InfiniteMachine.INSTANCE.terminate(new RuntimeException(ex));
         }
     }
 
