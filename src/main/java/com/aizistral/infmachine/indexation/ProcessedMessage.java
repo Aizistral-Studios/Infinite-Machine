@@ -1,14 +1,17 @@
-package com.aizistral.infmachine.data;
+package com.aizistral.infmachine.indexation;
 
 import net.dv8tion.jda.api.entities.Message;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ProcessedMessage {
-    private String message;
+    private final String message;
     private int linkCount;
     private int emojiCount;
+    private final int uniqueLength;
 
     public ProcessedMessage(Message messageInput) {
         String message = messageInput.getContentRaw();
@@ -22,6 +25,8 @@ public class ProcessedMessage {
         }
 
         this.message = message;
+
+        this.uniqueLength = calculateUniqueLength(message);
     }
 
     public String getMessage() {
@@ -34,6 +39,10 @@ public class ProcessedMessage {
 
     public int getEmojiCount() {
         return this.emojiCount;
+    }
+
+    public int getUniqueLength() {
+        return this.uniqueLength;
     }
 
     private String detectLinks(String message) {
@@ -51,7 +60,7 @@ public class ProcessedMessage {
     }
 
     private String detectEmojis(String message) {
-        Pattern emojiPattern = Pattern.compile("<:.+:\\d{18}>");
+        Pattern emojiPattern = Pattern.compile("<:[^:\\s]+:\\d{18}\\d*>");
         Matcher matcher = emojiPattern.matcher(message);
 
         StringBuilder emojis = new StringBuilder();
@@ -75,4 +84,15 @@ public class ProcessedMessage {
         return matcher.replaceAll("");
     }
 
+    private int calculateUniqueLength(String message) {
+        String[] stringArray = message.split("\\s+");
+
+        HashSet<String> uniqueWords = new HashSet<>(Arrays.asList(stringArray));
+        int uniqueLength = 0;
+
+        for (String uniqueWord : uniqueWords) {
+            uniqueLength += uniqueWord.length();
+        }
+        return uniqueLength;
+    }
 }

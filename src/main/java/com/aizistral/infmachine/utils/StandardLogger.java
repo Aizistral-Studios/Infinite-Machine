@@ -3,30 +3,25 @@ package com.aizistral.infmachine.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StandardLogger extends SimpleLogger {
+public class StandardLogger{
     private final Logger logger;
 
     public StandardLogger(String name) {
-        super(name);
         this.logger = LoggerFactory.getLogger(name);
     }
 
-    @Override
     public void error(String error) {
         this.logger.error(error);
     }
 
-    @Override
     public void error(String error, Object... args) {
         this.logger.error(String.format(error, args));
     }
 
-    @Override
     public void log(String log) {
         this.logger.info(log);
     }
 
-    @Override
     public void log(String log, Object... args) {
         this.logger.info(String.format(log, args));
     }

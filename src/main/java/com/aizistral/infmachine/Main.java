@@ -4,17 +4,17 @@ import java.io.IOException;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
-import com.aizistral.infmachine.database.local.JSONDatabase;
 import com.aizistral.infmachine.utils.StandardLogger;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public final class Main {
     private static final StandardLogger LOGGER = new StandardLogger("MachineBootstrap");
-    static final JDA JDA;
+    public static final JDA JDA;
 
     static {
         LOGGER.log("Starting up the Infinite Machine...");
@@ -22,7 +22,6 @@ public final class Main {
         try {
             InfiniteConfig.INSTANCE.init();
             InfiniteConfig.INSTANCE.forceSave();
-            JSONDatabase.INSTANCE.init();
             Localization.load();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -30,8 +29,7 @@ public final class Main {
 
         String token = InfiniteConfig.INSTANCE.getAccessToken();
 
-        if (token.isEmpty())
-            throw new RuntimeException("Access token not specified in config.json.");
+        if (token.isEmpty()) throw new RuntimeException("Access token not specified in config.json.");
 
         JDABuilder builder = JDABuilder.createDefault(token);
 
@@ -43,10 +41,15 @@ public final class Main {
         builder.setActivity(Activity.watching(Localization.translate("activity.watching")));
 
         JDA = builder.build();
+        try {
+            JDA.awaitReady();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        InfiniteConfig.INSTANCE.load(JDA);
     }
 
     public static void main(String... args) throws Exception {
         InfiniteMachine.LOGGER.log("Exiting main method...");
     }
-
 }
