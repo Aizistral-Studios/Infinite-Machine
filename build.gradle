@@ -98,6 +98,8 @@ task createDockerfile(type: Dockerfile) {
     maintainer 'Aizistral "admin@aizistral.com"'
     copyFile fatJar.archiveName, '/infinite-machine/InfiniteMachine.jar'
     runCommand 'mkdir /infinite-machine/persistence'
+	runCommand 'mkdir /infinite-machine/persistence/database'
+	runCommand 'mkdir /infinite-machine/persistence/config'
 	workingDir("/infinite-machine/persistence")
     entryPoint 'java'
     defaultCommand '-jar', '../InfiniteMachine.jar'
