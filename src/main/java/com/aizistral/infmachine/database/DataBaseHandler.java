@@ -35,6 +35,11 @@ public class DataBaseHandler {
     }
 
     private void createNewDatabase() {
+        try{
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            LOGGER.log("Can't locate driver Class.");
+        }
         try(Connection connection = DriverManager.getConnection(dbUrl)) {
             if (connection != null) {
                 DatabaseMetaData meta = connection.getMetaData();
