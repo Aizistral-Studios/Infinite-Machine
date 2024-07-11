@@ -38,6 +38,8 @@ public class InfiniteMachine extends ListenerAdapter {
             System.exit(ExitCode.MISSING_DOMAIN_ERROR.getCode());
             throw new IllegalStateException();
         }
+
+        InfiniteConfig.INSTANCE.getJDA().addEventListener(this);
     }
 
     private void awake() {
