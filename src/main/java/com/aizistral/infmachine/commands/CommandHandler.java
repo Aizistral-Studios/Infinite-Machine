@@ -120,7 +120,7 @@ public class CommandHandler extends ListenerAdapter {
                 break;
             }
             case "terminate": {
-                event.reply("Executing: Halt and catch fire protocol").queue();
+                event.reply("Executing: Halt and catch fire protocol").complete();
                 InfiniteMachine.INSTANCE.shutdown();
                 break;
             }
