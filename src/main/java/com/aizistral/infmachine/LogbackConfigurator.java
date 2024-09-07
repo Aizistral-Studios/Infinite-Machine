@@ -27,7 +27,7 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
         encoder.setContext(context);
 
         PatternLayout layout = new PatternLayout();
-        layout.setPattern("[%d{HH:mm:ss.SSS}] [T:%thread] [%level] [%logger{16}]: %msg%n");
+        layout.setPattern("[%d{dd.mm.yyyy-HH:mm:ss.SSS}] [T:%thread] [%level] [%logger{0}]: %msg%n");
         layout.setContext(context);
         layout.start();
 
@@ -36,12 +36,14 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
         ConsoleAppender<ILoggingEvent> console = new ConsoleAppender<>();
         console.setContext(context);
         console.setName("console");
+
         console.addFilter(new Filter<ILoggingEvent>() {
             @Override
             public FilterReply decide(ILoggingEvent event) {
                 return event.getLevel().isGreaterOrEqual(Level.INFO) ? FilterReply.ACCEPT : FilterReply.DENY;
             }
         });
+
         console.setEncoder(encoder);
         console.start();
 
@@ -49,12 +51,14 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
         fileStd.setContext(context);
         fileStd.setName("stdlog");
         fileStd.setFile("machine.log");
+
         fileStd.addFilter(new Filter<ILoggingEvent>() {
             @Override
             public FilterReply decide(ILoggingEvent event) {
                 return event.getLevel().isGreaterOrEqual(Level.INFO) ? FilterReply.ACCEPT : FilterReply.DENY;
             }
         });
+
         fileStd.setEncoder(encoder);
         fileStd.start();
 
@@ -62,12 +66,14 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
         fileErr.setContext(context);
         fileErr.setName("errlog");
         fileErr.setFile("machine.error.log");
+
         fileErr.addFilter(new Filter<ILoggingEvent>() {
             @Override
             public FilterReply decide(ILoggingEvent event) {
                 return event.getLevel().isGreaterOrEqual(Level.ERROR) ? FilterReply.ACCEPT : FilterReply.DENY;
             }
         });
+
         fileErr.setEncoder(encoder);
         fileErr.start();
 
@@ -75,12 +81,14 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
         fileDebug.setContext(context);
         fileDebug.setName("dbglog");
         fileDebug.setFile("machine.debug.log");
+
         fileDebug.addFilter(new Filter<ILoggingEvent>() {
             @Override
             public FilterReply decide(ILoggingEvent event) {
                 return FilterReply.ACCEPT;
             }
         });
+
         fileDebug.setEncoder(encoder);
         fileDebug.start();
 

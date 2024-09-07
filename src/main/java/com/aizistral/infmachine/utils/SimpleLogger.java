@@ -3,10 +3,10 @@ package com.aizistral.infmachine.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StandardLogger{
+public class SimpleLogger {
     private final Logger logger;
 
-    public StandardLogger(String name) {
+    public SimpleLogger(String name) {
         this.logger = LoggerFactory.getLogger(name);
     }
 
@@ -15,15 +15,15 @@ public class StandardLogger{
     }
 
     public void error(String error, Object... args) {
-        this.logger.error(String.format(error, args));
+        this.logger.error(this.insertArgs(error, args));
     }
 
-    public void log(String log) {
+    public void info(String log) {
         this.logger.info(log);
     }
 
-    public void log(String log, Object... args) {
-        this.logger.info(String.format(log, args));
+    public void info(String log, Object... args) {
+        this.logger.info(this.insertArgs(log, args));
     }
 
     public void debug(String log) {
@@ -31,7 +31,7 @@ public class StandardLogger{
     }
 
     public void debug(String log, Object... args) {
-        this.logger.debug(String.format(log, args));
+        this.logger.debug(this.insertArgs(log, args));
     }
 
     public void error(String error, Throwable ex) {
@@ -39,7 +39,11 @@ public class StandardLogger{
     }
 
     public void error(String error, Throwable ex, Object... args) {
-        this.logger.error(error, ex);
+        this.logger.error(this.insertArgs(error, args), ex);
+    }
+
+    private String insertArgs(String str, Object... args) {
+        return String.format(str.replace("{}", "%s"), args);
     }
 
 }

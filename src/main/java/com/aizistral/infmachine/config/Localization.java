@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.aizistral.infmachine.utils.StandardLogger;
+import com.aizistral.infmachine.utils.SimpleLogger;
 
 public class Localization {
-    private static final StandardLogger LOGGER = new StandardLogger("Localization");
+    private static final SimpleLogger LOGGER = new SimpleLogger("Localization");
     private static final Map<String, String> LOCALIZATION = new HashMap<>();
 
     public static void load() throws IOException {
-        LOGGER.log("Loading localization...");
+        LOGGER.info("Loading localization...");
 
         InputStream stream = Localization.class.getResourceAsStream("/lang/local.lang");
         List<String> lines = new ArrayList<>();
@@ -46,7 +46,7 @@ public class Localization {
             LOCALIZATION.put(splat[0], splat[1].replace("\\n", "\n"));
         }
 
-        LOGGER.log("Successfully loaded %s localization entries.", LOCALIZATION.size());
+        LOGGER.info("Successfully loaded %s localization entries.", LOCALIZATION.size());
     }
 
     public static String translate(String key) {
@@ -55,23 +55,6 @@ public class Localization {
 
     public static String translate(String key, Object... args) {
         return String.format(translate(key), args);
-    }
-
-    public static int getVar(int number) {
-        int var = 3;
-
-        if (number >= 10 && number <= 20)
-            return var;
-
-        int lastDigit = number % 10;
-
-        if (lastDigit == 1) {
-            var = 1;
-        } else if (lastDigit > 0 && lastDigit < 5) {
-            var = 2;
-        }
-
-        return var;
     }
 
 }
