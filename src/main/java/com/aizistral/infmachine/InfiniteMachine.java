@@ -22,8 +22,6 @@ public class InfiniteMachine extends ListenerAdapter {
     private InfiniteMachine() {
         this.startupTime = System.currentTimeMillis();
         this.domain = null;
-
-        Bootstrap.JDA.addEventListener(this);
     }
 
     public String getVersion() {

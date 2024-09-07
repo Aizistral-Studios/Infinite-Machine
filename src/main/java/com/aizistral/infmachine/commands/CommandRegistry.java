@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.aizistral.infmachine.Bootstrap;
+import com.aizistral.infmachine.commands.impl.KillCommand;
+import com.aizistral.infmachine.commands.impl.PingCommand;
 import com.aizistral.infmachine.config.Localization;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +32,7 @@ public class CommandRegistry implements EventListener {
 
     private void populate() {
         this.register(new PingCommand());
+        this.register(new KillCommand());
     }
 
     private void register(Command command) {
