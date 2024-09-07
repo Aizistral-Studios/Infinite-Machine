@@ -1,26 +1,12 @@
 package com.aizistral.infmachine;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import com.aizistral.infmachine.utils.SimpleLogger;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-
-import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.utils.messages.MessagePollBuilder;
-import net.dv8tion.jda.api.utils.messages.MessagePollData;
 
 @Getter
 public class InfiniteMachine extends ListenerAdapter {
