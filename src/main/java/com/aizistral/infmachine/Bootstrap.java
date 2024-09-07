@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
-public final class Main {
+public final class Bootstrap {
     private static final SimpleLogger LOGGER = new SimpleLogger("MachineBootstrap");
     public static final JDA JDA;
 
@@ -38,7 +38,7 @@ public final class Main {
                 GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS
                 );
 
-        builder.setActivity(Activity.watching(Localization.translate("activity.watching")));
+        builder.setActivity(Activity.watching(Localization.get("activity.watching")));
 
         JDA = builder.build();
 
@@ -49,7 +49,7 @@ public final class Main {
         }
 
         JDA.updateCommands().addCommands(
-                Commands.slash("ping", Localization.translate("cmd.ping.desc"))
+                Commands.slash("ping", Localization.get("cmd.ping.desc")).addOption(null, token, token)
                 ).queue();
     }
 

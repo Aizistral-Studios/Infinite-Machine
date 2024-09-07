@@ -47,12 +47,12 @@ public class Localization {
         LOGGER.info("Successfully loaded %s localization entries.", LOCALIZATION.size());
     }
 
-    public static String translate(String key) {
+    public static String get(String key) {
         return LOCALIZATION.getOrDefault(key, key);
     }
 
-    public static String translate(String key, Object... args) {
-        return String.format(translate(key), args);
+    public static String get(String key, Object... args) {
+        return String.format(get(key), args);
     }
 
 }

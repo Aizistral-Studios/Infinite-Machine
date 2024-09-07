@@ -23,11 +23,11 @@ public class InfiniteMachine extends ListenerAdapter {
         this.startupTime = System.currentTimeMillis();
         this.domain = null;
 
-        Main.JDA.addEventListener(this);
+        Bootstrap.JDA.addEventListener(this);
     }
 
     public String getVersion() {
-        String version = Main.class.getPackage().getImplementationVersion();
+        String version = Bootstrap.class.getPackage().getImplementationVersion();
         return version != null ? version : "UNKNOWN";
     }
 
