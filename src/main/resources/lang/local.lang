@@ -67,3 +67,4 @@ msg.openVotingSuccess=Succesfully opened voting for user <@%s>!
 msg.openVotingFail=Failed to open a new voting for user <@%s>. Is there one already?
 msg.ratingOwn=## Your Rating Stats:\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**
 msg.rating=## <@%s>'s Rating Stats:\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**
+msg.commandNotFound=I know no such command...
