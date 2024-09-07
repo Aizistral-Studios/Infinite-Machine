@@ -2,6 +2,7 @@ package com.aizistral.infmachine;
 
 import java.io.IOException;
 
+import com.aizistral.infmachine.commands.CommandRegistry;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.utils.SimpleLogger;
@@ -48,9 +49,7 @@ public final class Bootstrap {
             throw new RuntimeException(e);
         }
 
-        JDA.updateCommands().addCommands(
-                Commands.slash("ping", Localization.get("cmd.ping.desc")).addOption(null, token, token)
-                ).queue();
+        CommandRegistry.bootstrap();
     }
 
     public static void main(String... args) throws Exception {

@@ -31,17 +31,6 @@ public class InfiniteMachine extends ListenerAdapter {
         return version != null ? version : "UNKNOWN";
     }
 
-    @Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (event.getName().equals("ping")) {
-            long time = System.currentTimeMillis();
-            event.reply("Pong!").setEphemeral(false).flatMap(v -> event.getHook().editOriginalFormat(
-                    "Pong: %d ms", System.currentTimeMillis() - time)).queue();
-        } else {
-            event.reply("I don't know any such command...").queue();
-        }
-    }
-
     public void terminate() {
         this.terminate(0);
     }
