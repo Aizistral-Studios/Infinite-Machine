@@ -62,6 +62,7 @@ public class CommandRegistry implements EventListener {
         instance = new CommandRegistry();
         instance.populate();
         instance.sendUpdate();
+
         Bootstrap.JDA.addEventListener(instance);
     }
 
