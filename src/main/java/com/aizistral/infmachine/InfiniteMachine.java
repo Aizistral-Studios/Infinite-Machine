@@ -1,6 +1,13 @@
 package com.aizistral.infmachine;
 
 import com.aizistral.infmachine.commands.CommandHandler;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.data.ExitCode;
 import com.aizistral.infmachine.database.DataBaseHandler;
@@ -13,6 +20,13 @@ import lombok.SneakyThrows;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.utils.messages.MessagePollBuilder;
+import net.dv8tion.jda.api.utils.messages.MessagePollData;
 
 @Getter
 public class InfiniteMachine extends ListenerAdapter {
@@ -40,6 +54,26 @@ public class InfiniteMachine extends ListenerAdapter {
         }
 
         InfiniteConfig.INSTANCE.getJDA().addEventListener(this);
+
+        this.templeChannel = this.domain.getTextChannelById(this.config.getTempleChannelID());
+        this.machineChannel = this.domain.getTextChannelById(this.config.getMachineChannelID());
+        this.councilChannel = this.domain.getTextChannelById(this.config.getCouncilChannelID());
+        this.suggestionsChannel = this.domain.getTextChannelById(this.config.getSuggestionsChannelID());
+        this.believersRole = this.domain.getRoleById(this.config.getBelieversRoleID());
+        this.dwellersRole = this.domain.getRoleById(this.config.getDwellersRoleID());
+        this.beholdersRole = this.domain.getRoleById(this.config.getBeholdersRoleID());
+
+        //        this.domain.getNewsChannelById(1267062468883120179L)
+        //        .sendMessage("Helo guys, it's-a me, Aizistral! ✨\n\nNow, this isn't a stream announcement this time, but rather a poll. Y'all get to choose what you want me to do on the very next stream!\n\nCast your votes wisely 🦉\n\n<@&771377288927117342> <@&1229431177085976587> <@&1227941342873784420>")
+        //        .setPoll(new MessagePollBuilder("What should Aizistral do on the next stream?")
+        //                .addAnswer("Continue playing Vintage Story")
+        //                .addAnswer("Play FTL: Faster Than Light (never played before)")
+        //                .addAnswer("Keep working on Enigmatic Legacy")
+        //                .addAnswer("Wear a maid outfit (in addition to one of the above)")
+        //                .setMultiAnswer(true)
+        //                .setDuration(1L, TimeUnit.DAYS)
+        //                .build())
+        //        .queue();
     }
 
     private void awake() {
