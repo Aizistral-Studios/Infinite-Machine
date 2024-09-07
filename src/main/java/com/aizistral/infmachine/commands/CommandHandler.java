@@ -44,7 +44,7 @@ public class CommandHandler extends ListenerAdapter {
     }
 
     public void init() {
-        registerCommands();
+        this.registerCommands();
     }
 
     private void registerCommands() {
@@ -57,29 +57,29 @@ public class CommandHandler extends ListenerAdapter {
                 Commands.slash("uptime", Localization.translate("cmd.uptime.desc")),
                 //Rating Commands
                 Commands.slash("leaderboard", Localization.translate("cmd.leaderboard.desc"))
-                        .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
+                .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false),
                 Commands.slash("rating", Localization.translate("cmd.rating.desc"))
-                        .addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
+                .addOption(OptionType.USER, "user", Localization.translate("cmd.rating.user"), false),
                 //Fun Commands
                 Commands.slash("pet", Localization.translate("cmd.pet.desc"))
-                        .addOption(OptionType.MENTIONABLE, "target", Localization.translate("cmd.pet.user"), false),
+                .addOption(OptionType.MENTIONABLE, "target", Localization.translate("cmd.pet.user"), false),
                 //Admin Commands
                 Commands.slash("terminate", Localization.translate("cmd.terminate.desc"))
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("fullindex", Localization.translate("cmd.fullindex.desc"))
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("getmostactive", Localization.translate("cmd.getmostactive.desc"))
-                        .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false)
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                .addOption(OptionType.INTEGER, "start", Localization.translate("cmd.leaderboard.start"), false)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("openvoting", Localization.translate("cmd.openvoting.desc"))
-                        .addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
-                        .addOption(OptionType.STRING, "type", Localization.translate("cmd.openvoting.type", Arrays.stream(VotingType.values()).map(VotingType::toString).collect(Collectors.joining("/"))), false)
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
+                .addOption(OptionType.USER, "user", Localization.translate("cmd.openvoting.user"), true)
+                .addOption(OptionType.STRING, "type", Localization.translate("cmd.openvoting.type", Arrays.stream(VotingType.values()).map(VotingType::toString).collect(Collectors.joining("/"))), false)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED),
                 Commands.slash("sendmessage", Localization.translate("cmd.sendmessage.desc"))
-                        .addOption(OptionType.CHANNEL, "channel", Localization.translate("cmd.sendmessage.channel"), true)
-                        .addOption(OptionType.STRING, "message", Localization.translate("cmd.sendmessage.message"), true)
-                        .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
-        ).queue();
+                .addOption(OptionType.CHANNEL, "channel", Localization.translate("cmd.sendmessage.channel"), true)
+                .addOption(OptionType.STRING, "message", Localization.translate("cmd.sendmessage.message"), true)
+                .setDefaultPermissions(DefaultMemberPermissions.DISABLED)
+                ).queue();
     }
 
     @Override
@@ -93,58 +93,58 @@ public class CommandHandler extends ListenerAdapter {
         }
 
         switch (event.getName()) {
-            case "ping": {
-                ping(event);
-                break;
-            }
-            case "version": {
-                event.reply(String.format("The machine's version is: **%s**", DataBaseHandler.INSTANCE.retrieveInfiniteVersion())).queue();
-                break;
-            }
-            case "uptime": {
-                uptime(event);
-                break;
-            }
-            case "leaderboard": {
-                String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, false);
-                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
-                break;
-            }
-            case "rating": {
-                String s  = LeaderBoard.INSTANCE.getRatingString(event);
-                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
-                break;
-            }
-            case "pet": {
-                pet(event);
-                break;
-            }
-            case "terminate": {
-                event.reply("Executing: Halt and catch fire protocol").complete();
-                InfiniteMachine.INSTANCE.shutdown();
-                break;
-            }
-            case "getmostactive": {
-                String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, true);
-                event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
-                break;
-            }
-            case "fullindex": {
-                CoreMessageIndexer.INSTANCE.fullIndex();
-                event.reply("Indexation reset.").queue();
-                break;
-            }
-            case "openvoting": {
-                VotingHandler.INSTANCE.createManualVoting(event);
-                break;
-            }
-            case "sendmessage": {
-                sendMessage(event);
-                break;
-            }
-            default: {
-                event.reply("Hmm strange this command appears to be not implemented yet. Perhaps ask the Infinite Technician about it?").queue();
-            }
+        case "ping": {
+            ping(event);
+            break;
+        }
+        case "version": {
+            event.reply(String.format("The machine's version is: **%s**", DataBaseHandler.INSTANCE.retrieveInfiniteVersion())).queue();
+            break;
+        }
+        case "uptime": {
+            uptime(event);
+            break;
+        }
+        case "leaderboard": {
+            String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, false);
+            event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
+            break;
+        }
+        case "rating": {
+            String s  = LeaderBoard.INSTANCE.getRatingString(event);
+            event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
+            break;
+        }
+        case "pet": {
+            this.pet(event);
+            break;
+        }
+        case "terminate": {
+            event.reply("Executing: Halt and catch fire protocol").complete();
+            InfiniteMachine.INSTANCE.shutdown();
+            break;
+        }
+        case "getmostactive": {
+            String s  = LeaderBoard.INSTANCE.getLeaderboardString(event, true);
+            event.deferReply().flatMap(v -> event.getHook().sendMessage(s).setAllowedMentions(Collections.EMPTY_LIST)).queue();
+            break;
+        }
+        case "fullindex": {
+            CoreMessageIndexer.INSTANCE.fullIndex();
+            event.reply("Indexation reset.").queue();
+            break;
+        }
+        case "openvoting": {
+            VotingHandler.INSTANCE.createManualVoting(event);
+            break;
+        }
+        case "sendmessage": {
+            this.sendMessage(event);
+            break;
+        }
+        default: {
+            event.reply("Hmm strange this command appears to be not implemented yet. Perhaps ask the Infinite Technician about it?").queue();
+        }
         }
     }
 
@@ -171,7 +171,8 @@ public class CommandHandler extends ListenerAdapter {
         IMentionable mentionable = mapping != null ? mapping.getAsMentionable() : null;
         long targetID = 310848622642069504L;
         IMentionable target;
-        if(mentionable == null) {
+
+        if (mentionable == null) {
             target = Main.JDA.retrieveUserById(targetID).complete();
         } else if (mentionable instanceof User) {
             target = mapping.getAsUser();
@@ -180,7 +181,8 @@ public class CommandHandler extends ListenerAdapter {
             target = mapping.getAsUser();
             targetID = target.getIdLong();
         } else if (mentionable instanceof Role) {
-            if(memberHasPermissionToMentionRoleHere(event.getUser(), event.getGuildChannel(), mapping.getAsRole())) {
+            if (this.memberHasPermissionToMentionRoleHere(event.getUser(), event.getGuildChannel(),
+                    mapping.getAsRole())) {
                 target = mapping.getAsRole();
                 targetID = target.getIdLong();
             } else {
@@ -198,13 +200,13 @@ public class CommandHandler extends ListenerAdapter {
         //Excluding Arkadiy from normal petting rules
         if (targetID == 440381346339094539L) {
             if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRole().getIdLong())) {
-                msg = petMasterPetMessage(target);
+                msg = this.petMasterPetMessage(target);
                 msg += String.format("\nYes %s can pet anyone and anything.", InfiniteConfig.INSTANCE.getPetmasterRole());
             } else {
                 msg = "You should know, that a soul can't be `/pet`\nNo matter what machines you wield...";
             }
         } else if (Utils.hasRole(author, InfiniteConfig.INSTANCE.getPetmasterRole().getIdLong())) {
-            msg = petMasterPetMessage(target);
+            msg = this.petMasterPetMessage(target);
         }else if (targetID == 814542724010213427L) {
             if (!Utils.hasRole(author, InfiniteConfig.INSTANCE.getArchitectRole().getIdLong())) {
                 msg = String.format("How dare you filthy animal lay hands on the muffin of %s.", InfiniteConfig.INSTANCE.getArchitectRole());
