@@ -14,52 +14,22 @@ import com.google.gson.GsonBuilder;
 
 import lombok.Getter;
 
+@Getter
 public class InfiniteConfig {
-    private static final SimpleLogger LOGGER = new SimpleLogger("InfiniteConfig");
-    private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
     private static final Path FILE = Paths.get("./config/config.json");
+    private static final JSONLoader<InfiniteConfig> LOADER = new JSONLoader<>(FILE, InfiniteConfig.class, InfiniteConfig::new);
 
     @Getter
     private static InfiniteConfig instance = null;
 
-    @Getter
     private String accessToken = "";
 
     public static void load() throws IOException {
-        LOGGER.info("Retreiving the config file...");
-
-        Files.createDirectories(FILE.getParent());
-
-        if (!Files.exists(FILE)) {
-            LOGGER.info("No config file found, creating a new one...", FILE);
-            instance = new InfiniteConfig();
-        } else {
-            if (!Files.isRegularFile(FILE))
-                throw new IOException("Path " + FILE + " exists, but is not a file!");
-
-            try (BufferedReader reader = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
-                instance = GSON.fromJson(reader, InfiniteConfig.class);
-            } catch (Exception ex) {
-                LOGGER.error("Could not read config file: {}", FILE);
-                LOGGER.error("This likely indicates the file is corrupted.");
-                throw ex;
-            }
-
-            LOGGER.info("Config file contents loaded.");
-        }
-
-        save();
+        instance = LOADER.load();
     }
 
     public static void save() throws IOException {
-        if (instance == null)
-            throw new IOException("Cannot save the config file when instance is null!");
-
-        try (BufferedWriter writer = Files.newBufferedWriter(FILE, StandardCharsets.UTF_8)) {
-            GSON.toJson(instance, writer);
-        }
-
-        LOGGER.info("Config file saved to: {}", FILE);
+        LOADER.save();
     }
 
 }

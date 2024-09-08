@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.aizistral.infmachine.Bootstrap;
+import com.aizistral.infmachine.InfiniteMachine;
+import com.aizistral.infmachine.MachineBootstrap;
 import com.aizistral.infmachine.commands.impl.KillCommand;
 import com.aizistral.infmachine.commands.impl.PingCommand;
 import com.aizistral.infmachine.config.Localization;
@@ -23,47 +24,53 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 public class CommandRegistry implements EventListener {
     @Getter
-    private static CommandRegistry instance;
+    private final InfiniteMachine machine;
     private final Map<String, Command> commands = new HashMap<>();
 
-    private CommandRegistry() {
-        // NO-OP
+    public CommandRegistry(InfiniteMachine machine) {
+        this.machine = machine;
     }
 
     private void populate() {
         this.register(new PingCommand());
+
+        if (!this.machine.getConfig().isTrusted())
+            return;
+
         this.register(new KillCommand());
     }
 
     private void register(Command command) {
-        this.commands.put(command.getData().getName(), command);
+        this.commands.put(command.getData(this::getMachine).getName(), command);
     }
 
     private void sendUpdate() {
-        Bootstrap.JDA.updateCommands().addCommands(this.commands.values().stream().map(Command::getData).toList()).queue();
+        var commands = this.commands.values().stream().map(c -> c.getData(this::getMachine)).toList();
+        this.machine.getGuild().updateCommands().addCommands(commands).queue();
     }
 
     @Override
     public void onEvent(GenericEvent event) {
         if (event instanceof SlashCommandInteractionEvent slashEvent) {
+            if (!this.machine.represents(slashEvent.getGuild()))
+                return;
+
             Command command = this.commands.get(slashEvent.getName());
 
             if (command != null) {
-                command.onEvent(slashEvent);
+                command.onEvent(slashEvent, this::getMachine);
             } else {
                 slashEvent.reply(Localization.get("msg.commandNotFound")).queue();
             }
         }
     }
 
-    public static void bootstrap() {
-        Preconditions.checkArgument(instance == null, "CommandRegistry already bootstrapped!");
+    public void initialize() {
+        Preconditions.checkArgument(this.commands.isEmpty(), "CommandRegistry already initialized!");
 
-        instance = new CommandRegistry();
-        instance.populate();
-        instance.sendUpdate();
-
-        Bootstrap.JDA.addEventListener(instance);
+        this.populate();
+        this.machine.getJDA().addEventListener(this);
+        this.sendUpdate();
     }
 
 }
