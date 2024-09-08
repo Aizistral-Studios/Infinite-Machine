@@ -67,4 +67,27 @@ msg.openVotingSuccess=Succesfully opened voting for user <@%s>!
 msg.openVotingFail=Failed to open a new voting for user <@%s>. Is there one already?
 msg.ratingOwn=## Your Rating Stats:\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**
 msg.rating=## <@%s>'s Rating Stats:\n\nLeaderboard position (by rating): **#%s**\nTotal rating acquired: **%s points**\n\nLeaderboard position (by messages): **#%s**\nTotal messages sent: **%s messages**
+
 msg.commandNotFound=I know no such command...
+msg.commandError=An internal error occured when processing that command.
+
+cmd.mute.desc=Mute the designated subject
+msg.muteDesc.invalidDuration=<:cross_mark:985652668850655322> Incomprehensible duration: **%s**
+
+msg.muteDesc.success=✅ For their transgressions, **%s** was silenced for some time. May they find redemption in quiet contemplation.
+msg.muteDesc.fail=<:cross_mark:985652668850655322> Rather unfortunately, I find myself incapable of undertaking such action against **%s**. But rest assured, your complaint has been thoroughly recorded.
+
+msg.moderationAuthority=Authority
+msg.moderationSubject=Subject
+msg.moderationDuration=Duration
+msg.moderationReason=Reason
+
+time.seconds.singular=%s second
+time.minutes.singular=%s minute
+time.hours.singular=%s hour
+time.days.singular=%s day
+
+time.seconds.plural=%s seconds
+time.minutes.plural=%s minutes
+time.hours.plural=%s hours
+time.days.plural=%s days

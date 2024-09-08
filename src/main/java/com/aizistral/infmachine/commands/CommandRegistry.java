@@ -8,8 +8,10 @@ import java.util.Map;
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.MachineBootstrap;
 import com.aizistral.infmachine.commands.impl.KillCommand;
+import com.aizistral.infmachine.commands.impl.MuteCommand;
 import com.aizistral.infmachine.commands.impl.PingCommand;
 import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.utils.SimpleLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -23,6 +25,8 @@ import net.dv8tion.jda.api.hooks.EventListener;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 public class CommandRegistry implements EventListener {
+    private static final SimpleLogger LOGGER = new SimpleLogger("CommandRegistry");
+
     @Getter
     private final InfiniteMachine machine;
     private final Map<String, Command> commands = new HashMap<>();
@@ -33,6 +37,7 @@ public class CommandRegistry implements EventListener {
 
     private void populate() {
         this.register(new PingCommand());
+        this.register(new MuteCommand());
 
         if (!this.machine.getConfig().isTrusted())
             return;
@@ -58,7 +63,16 @@ public class CommandRegistry implements EventListener {
             Command command = this.commands.get(slashEvent.getName());
 
             if (command != null) {
-                command.onEvent(slashEvent, this::getMachine);
+                try {
+                    command.onEvent(slashEvent, this::getMachine);
+                } catch (Throwable ex) {
+                    LOGGER.error("An error occured when processing a slash command [{}]", ex,
+                            slashEvent.getFullCommandName());
+
+                    if (!slashEvent.isAcknowledged()) {
+                        slashEvent.reply(Localization.get("msg.commandError")).queue();
+                    }
+                }
             } else {
                 slashEvent.reply(Localization.get("msg.commandNotFound")).queue();
             }

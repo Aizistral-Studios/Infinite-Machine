@@ -24,6 +24,8 @@ public class InfiniteConfig {
 
     private String accessToken = "";
     private String mongoURI = "";
+    private int embedColorDefault = 0x14D294;
+    private int embedColorError = 0xD21452;
 
     public static void load() throws IOException {
         instance = LOADER.load();
