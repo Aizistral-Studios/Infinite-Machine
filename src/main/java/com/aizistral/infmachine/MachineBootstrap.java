@@ -14,6 +14,8 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
@@ -59,6 +61,8 @@ public final class MachineBootstrap {
             jda.getGuilds().forEach(InfiniteMachine::bootInstance);
         });
 
+        jda.addEventListener(new JoinEventHandler());
+
         LOGGER.info("Exiting main method...");
     }
 
@@ -74,6 +78,17 @@ public final class MachineBootstrap {
     public static void terminate(int code) {
         LOGGER.info("Infinite Machine is shutting down...");
         System.exit(code);
+    }
+
+    private static class JoinEventHandler extends ListenerAdapter {
+
+        @Override
+        public void onGuildJoin(GuildJoinEvent event) {
+            if (!InfiniteMachine.instanceExistsFor(event.getGuild())) {
+                InfiniteMachine.bootInstance(event.getGuild());
+            }
+        }
+
     }
 
 }

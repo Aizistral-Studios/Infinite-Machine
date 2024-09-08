@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.management.RuntimeErrorException;
@@ -54,9 +55,17 @@ public class InfiniteMachine {
         return this.guild.getIdLong() == guild.getIdLong();
     }
 
+    public static boolean instanceExistsFor(Guild guild) {
+        return INSTANCES.stream().anyMatch(machine -> machine.represents(guild));
+    }
+
+    public static List<InfiniteMachine> getInstances() {
+        return Collections.unmodifiableList(INSTANCES);
+    }
+
     @SneakyThrows
     static void bootInstance(Guild guild) throws IllegalArgumentException {
-        if (INSTANCES.stream().anyMatch(machine -> machine.represents(guild)))
+        if (instanceExistsFor(guild))
             throw new IllegalArgumentException("Guild " + guild.getId() + " already has a dedicated machine instance!");
 
         InfiniteMachine machine = new InfiniteMachine(guild);
@@ -65,7 +74,7 @@ public class InfiniteMachine {
         machine.getCommands().initialize();
 
         INSTANCES.add(machine);
-        LOGGER.info("Machine instance initialized for guild {}", guild.getId());
+        LOGGER.info("Machine instance initialized for guild {} ({}).", guild.getId(), guild.getName());
     }
 
 }
