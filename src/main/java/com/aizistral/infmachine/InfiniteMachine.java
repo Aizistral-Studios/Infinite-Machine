@@ -17,6 +17,7 @@ import com.aizistral.infmachine.utils.SimpleLogger;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;

@@ -3,10 +3,18 @@ package com.aizistral.infmachine;
 import java.io.IOException;
 import java.util.List;
 
+import org.bson.Document;
+
 import com.aizistral.infmachine.commands.CommandRegistry;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.database.InfiniteDatabase;
 import com.aizistral.infmachine.utils.SimpleLogger;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -34,11 +42,16 @@ public final class MachineBootstrap {
             throw new RuntimeException(ex);
         }
 
-        String token = InfiniteConfig.getInstance().getAccessToken();
+        InfiniteConfig config = InfiniteConfig.getInstance();
+        String token = config.getAccessToken();
+        String mongoURI = config.getMongoURI();
 
         if (token.isEmpty())
             throw new RuntimeException("Access token not specified in config.json.");
+        else if (mongoURI.isEmpty())
+            throw new RuntimeException("MongoDB URI not specified in config.json.");
 
+        InfiniteDatabase.initialize();
         JDABuilder builder = JDABuilder.createDefault(token);
 
         builder.enableIntents(

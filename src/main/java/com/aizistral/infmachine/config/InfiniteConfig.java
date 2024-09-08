@@ -23,6 +23,7 @@ public class InfiniteConfig {
     private static InfiniteConfig instance = null;
 
     private String accessToken = "";
+    private String mongoURI = "";
 
     public static void load() throws IOException {
         instance = LOADER.load();
