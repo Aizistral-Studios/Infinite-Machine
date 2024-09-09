@@ -26,6 +26,7 @@ public class InfiniteConfig {
     private String mongoURI = "";
     private int embedColorDefault = 0x14D294;
     private int embedColorError = 0xD21452;
+    private long routineSleepMs = 60_000L;
 
     public static void load() throws IOException {
         instance = LOADER.load();

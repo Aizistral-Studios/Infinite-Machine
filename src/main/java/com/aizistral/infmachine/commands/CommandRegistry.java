@@ -7,9 +7,11 @@ import java.util.Map;
 
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.MachineBootstrap;
+import com.aizistral.infmachine.commands.impl.BanCommand;
 import com.aizistral.infmachine.commands.impl.KillCommand;
 import com.aizistral.infmachine.commands.impl.MuteCommand;
 import com.aizistral.infmachine.commands.impl.PingCommand;
+import com.aizistral.infmachine.commands.impl.WarnCommand;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.utils.SimpleLogger;
 import com.google.common.base.Preconditions;
@@ -37,7 +39,9 @@ public class CommandRegistry implements EventListener {
 
     private void populate() {
         this.register(new PingCommand());
+        this.register(new WarnCommand());
         this.register(new MuteCommand());
+        this.register(new BanCommand());
 
         if (!this.machine.getConfig().isTrusted())
             return;

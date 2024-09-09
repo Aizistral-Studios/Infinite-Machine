@@ -5,9 +5,11 @@ import java.util.concurrent.TimeUnit;
 import com.aizistral.infmachine.config.Localization;
 
 import lombok.Value;
+import lombok.With;
 
 @Value
 public class SimpleDuration {
+    @With
     private final long duration;
     private final TimeUnit timeUnit;
 
@@ -20,6 +22,9 @@ public class SimpleDuration {
     }
 
     public String getLocalized() {
+        if (this.duration <= 0)
+            return Localization.get("time.eternal");
+
         String key = "time." + this.timeUnit.name().toLowerCase() + (this.duration == 1 ? ".singular" : ".plural");
         return Localization.get(key, this.duration);
     }

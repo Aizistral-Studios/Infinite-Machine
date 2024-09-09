@@ -71,16 +71,44 @@ msg.rating=## <@%s>'s Rating Stats:\n\nLeaderboard position (by rating): **#%s**
 msg.commandNotFound=I know no such command...
 msg.commandError=An internal error occured when processing that command.
 
+cmd.warn.desc=Warn the designated subject
+cmd.warn.subject.desc=The subject to be warned
+cmd.warn.reason.desc=Why is this subject being warned?
+cmd.warn.duration.desc=Duration of the warning
+
 cmd.mute.desc=Mute the designated subject
-msg.muteDesc.invalidDuration=<:cross_mark:985652668850655322> Incomprehensible duration: **%s**
+cmd.mute.subject.desc=The subject to be muted
+cmd.mute.reason.desc=Why is this subject being muted?
+cmd.mute.duration.desc=Duration of the mute
 
-msg.muteDesc.success=✅ For their transgressions, **%s** was silenced for some time. May they find redemption in quiet contemplation.
-msg.muteDesc.fail=<:cross_mark:985652668850655322> Rather unfortunately, I find myself incapable of undertaking such action against **%s**. But rest assured, your complaint has been thoroughly recorded.
+cmd.ban.desc=Exile the designated subject
+cmd.ban.subject.desc=The subject to be exiled
+cmd.ban.reason.desc=Why is this subject being exiled?
+cmd.ban.duration.desc=Duration of the exilement
+cmd.ban.clear_time.desc=Recent timeframe in which the subject's messages will be deleted
 
-msg.moderationAuthority=Authority
-msg.moderationSubject=Subject
-msg.moderationDuration=Duration
-msg.moderationReason=Reason
+msg.actionError.invalidDuration=Incomprehensible duration: **%s**
+msg.actionError.noMember=Subject was not designated correctly.
+msg.actionError.noReason=Reason was not specified correctly.
+
+msg.moderationActionTitle=Justice is served!
+
+msg.muteDesc.success=**%s** was silenced.
+msg.muteDesc.fail=Rather unfortunately, I find myself incapable of silencing **%s**. But rest assured, your complaint has been thoroughly recorded.
+msg.muteDesc.log=For their transgressions, **%s** was silenced for some time. May they find redemption in quiet contemplation.
+
+msg.warnDesc.success=**%s** was warned.
+msg.warnDesc.fail=Rather unfortunately, I find myself incapable of issuing a formal warning to **%s**. But rest assured, your complaint has been thoroughly recorded.
+msg.warnDesc.log=In the light of their objectionable behavior, **%s** was issued a formal warning. Let us hope that it remains sufficient.
+
+msg.banDesc.success=**%s** was exiled.
+msg.banDesc.fail=Rather unfortunately, I find myself incapable of exiling **%s** from our domain. But rest assured, your complaint has been thoroughly recorded.
+msg.banDesc.log=For their unspeakable violations, **%s** was exiled from our domain. Nothing awaits them in the wastes beyond, nothing but sorrow and regret.
+
+msg.moderationAuthority=Authority:
+msg.moderationSubject=Subject:
+msg.moderationDuration=Duration:
+msg.moderationReason=Reason:
 
 time.seconds.singular=%s second
 time.minutes.singular=%s minute
@@ -91,3 +119,6 @@ time.seconds.plural=%s seconds
 time.minutes.plural=%s minutes
 time.hours.plural=%s hours
 time.days.plural=%s days
+
+time.eternal=Until the end of times
+msg.banExpired=Exilement duration expired.

@@ -9,6 +9,7 @@ import com.aizistral.infmachine.commands.CommandRegistry;
 import com.aizistral.infmachine.config.InfiniteConfig;
 import com.aizistral.infmachine.config.Localization;
 import com.aizistral.infmachine.database.InfiniteDatabase;
+import com.aizistral.infmachine.handlers.RoutineHandler;
 import com.aizistral.infmachine.utils.SimpleLogger;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -72,11 +73,16 @@ public final class MachineBootstrap {
         // remove old global commands first
         jda.updateCommands().queue(list -> {
             jda.getGuilds().forEach(InfiniteMachine::bootInstance);
+            RoutineHandler.initialize();
         });
 
         jda.addEventListener(new JoinEventHandler());
 
         LOGGER.info("Exiting main method...");
+    }
+
+    public static JDA getJDA() {
+        return jda;
     }
 
     public static String getVersion() {
