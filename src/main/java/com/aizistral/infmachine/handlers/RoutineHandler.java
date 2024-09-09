@@ -27,6 +27,10 @@ public class RoutineHandler extends Thread {
             List<ActiveBan> bans = InfiniteDatabase.getActiveBans();
 
             for (ActiveBan ban : bans) {
+                if (ban.getDuration() <= 0) {
+                    continue;
+                }
+
                 if (time > ban.getTimestamp() + ban.getDuration()) {
                     JDA jda = MachineBootstrap.getJDA();
                     Guild guild = jda.getGuildById(ban.getGuildId());
