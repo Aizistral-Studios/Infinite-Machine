@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -61,6 +62,13 @@ public class MuteCommand extends PunishCommand {
     protected Optional<AuditableRestAction<Void>> getModerationAction(Guild guild, User subject, SimpleDuration duration,
             String reason, SlashCommandInteractionEvent event, Context context) {
         return Optional.of(guild.timeoutFor(subject, duration.getDuration(), duration.getTimeUnit()).reason(reason));
+    }
+
+    @Override
+    protected void handleSuccess(SlashCommandInteractionEvent event, Context context, User subject, User moderator,
+            SimpleDuration duration, ModerationAction action, EmbedBuilder builder, InteractionHook hook) {
+        super.handleSuccess(event, context, subject, moderator, duration, action, builder, hook);
+        InfiniteDatabase.registerPunishment(action, subject.getIdLong(), context.getGuild().getIdLong(), -1);
     }
 
 }

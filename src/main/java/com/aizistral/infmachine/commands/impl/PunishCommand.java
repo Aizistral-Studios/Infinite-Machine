@@ -32,12 +32,10 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 
-public abstract class PunishCommand implements Command {
+public abstract class PunishCommand extends ModerationCommand {
     private final ReentrantLock lock = new ReentrantLock();
 
     protected abstract String getCommandName();
-
-    public abstract ModerationAction.Type getActionType();
 
     protected abstract Optional<AuditableRestAction<Void>> getModerationAction(Guild guild, User subject,
             SimpleDuration duration, String reason, SlashCommandInteractionEvent event, Context context);
@@ -77,24 +75,6 @@ public abstract class PunishCommand implements Command {
 
     protected SlashCommandData setDefaultPermissions(SlashCommandData data, String name) {
         return data.setDefaultPermissions(DefaultMemberPermissions.DISABLED);
-    }
-
-    protected String getSubjectDisplayName(SlashCommandInteractionEvent event) {
-        Member member = event.getOption("subject", OptionMapping::getAsMember);
-
-        if (member != null)
-            return member.getEffectiveName();
-        else
-            return event.getOption("subject", OptionMapping::getAsUser).getEffectiveName();
-    }
-
-    protected String getModeratorDisplayName(SlashCommandInteractionEvent event) {
-        Member member = event.getMember();
-
-        if (member != null)
-            return member.getEffectiveName();
-        else
-            return event.getUser().getEffectiveName();
     }
 
     protected SimpleDuration applyConstraints(SimpleDuration duration) {
@@ -182,15 +162,14 @@ public abstract class PunishCommand implements Command {
 
         event.deferReply().queue(hook -> {
             try {
-                LOGGER.info("Received /{} command, acquiring thread lock...", this.getCommandName());
-                this.lock.lock();
-
+                this.acquireLock();
                 Member memberSubject = event.getOption("subject", OptionMapping::getAsMember);
 
                 if (memberSubject != null) {
                     if (memberSubject.getPermissions().contains(Permission.ADMINISTRATOR)) {
                         this.handleError(event, context, subject, action, builder, hook, new IllegalArgumentException(
                                 "Cannot take action against an administrator"));
+                        this.releaseLock();
                         return;
                     }
                 }
@@ -199,18 +178,32 @@ public abstract class PunishCommand implements Command {
 
                 optional.ifPresentOrElse(request -> request.queue(success -> {
                     this.handleSuccess(event, context, subject, moderator, duration, action, builder, hook);
+                    this.releaseLock();
                 }, error -> {
                     this.handleError(event, context, subject, action, builder, hook, error);
+                    this.releaseLock();
                 }), () -> {
                     this.handleSuccess(event, context, subject, moderator, duration, action, builder, hook);
+                    this.releaseLock();
                 });
             } catch (Exception ex) {
                 this.handleError(event, context, subject, action, builder, hook, ex);
-            } finally {
-                this.lock.unlock();
-                LOGGER.info("Command /{} handled, lock released.", this.getCommandName());
+                this.releaseLock();
             }
         });
+    }
+
+    private void acquireLock() {
+        LOGGER.info("Received /{} command, acquiring thread lock...", this.getCommandName());
+        this.lock.lock();
+    }
+
+    private void releaseLock() {
+        if (this.lock.isHeldByCurrentThread()) {
+            this.lock.unlock();
+        }
+
+        LOGGER.info("Command /{} handled, lock released.", this.getCommandName());
     }
 
     protected void handleValidationError(String description, SlashCommandInteractionEvent event, Context context) {

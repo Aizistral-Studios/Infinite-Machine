@@ -58,9 +58,12 @@ public class UnpunishRoutine implements Routine {
                                     guildId);
                         });
                     } else if (punishment.getType() == Type.WARNING) {
+                        InfiniteDatabase.clearWarning(caseId, guildId);
                         LOGGER.info("Warning #{} removed from subject {} in guild {} since it expired.", caseId, subjectId,
                                 guildId);
-                        InfiniteDatabase.clearWarning(caseId, guildId);
+                    } else if (punishment.getType() == Type.MUTE) {
+                        InfiniteDatabase.clearMute(subjectId, guildId);
+                        LOGGER.info("Mute record removed for subject {} in guild {} since it expired.", subjectId, guildId);
                     }
                 });
             }

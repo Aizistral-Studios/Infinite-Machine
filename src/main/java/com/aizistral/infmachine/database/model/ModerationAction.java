@@ -27,6 +27,6 @@ public class ModerationAction {
     }
 
     public static enum Type {
-        WARNING, MUTE, BAN;
+        WARNING, MUTE, BAN, REMOVE_WARNING, REMOVE_MUTE, REMOVE_BAN;
     }
 }

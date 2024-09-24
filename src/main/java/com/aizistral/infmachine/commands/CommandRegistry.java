@@ -11,6 +11,9 @@ import com.aizistral.infmachine.commands.impl.BanCommand;
 import com.aizistral.infmachine.commands.impl.KillCommand;
 import com.aizistral.infmachine.commands.impl.MuteCommand;
 import com.aizistral.infmachine.commands.impl.PingCommand;
+import com.aizistral.infmachine.commands.impl.UnbanCommand;
+import com.aizistral.infmachine.commands.impl.UnmuteCommand;
+import com.aizistral.infmachine.commands.impl.UnwarnCommand;
 import com.aizistral.infmachine.commands.impl.WarnCommand;
 import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.utils.SimpleLogger;
@@ -42,6 +45,9 @@ public class CommandRegistry implements EventListener {
         this.register(new WarnCommand());
         this.register(new MuteCommand());
         this.register(new BanCommand());
+        this.register(new UnwarnCommand());
+        this.register(new UnmuteCommand());
+        this.register(new UnbanCommand());
 
         if (!this.machine.getConfig().isTrusted())
             return;

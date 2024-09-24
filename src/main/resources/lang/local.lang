@@ -123,11 +123,20 @@ time.days.plural=%s days
 time.eternal=Until the end of times
 audit.banExpired=Exilement duration expired.
 
-msg.unbanTitle=End of exilement
-msg.unbanDesc=As the duration of %s's exilement expired, they are free to enter our domain once more.
+msg.unbanTitle=End of exilement!
+msg.unbanDesc=The duration of exilement once decreed upon **%s's** has expired, and they are free to enter our domain once more.
 
 msg.warnGlobalCount=Case #:
 msg.warnUserCount=Warning #:
 
-msg.pongReply=Pong!
-msg.pongReplyMs=Pong: %d ms
+msg.pingReply=Pong!
+msg.pingReplyMs=Pong: %d ms
+
+msg.unwarn.logTitle=Warning revoked!
+msg.unwarn.logContent=Formal warning **#%s** has been revoked from **%s**.
+
+msg.unmute.logTitle=Mute revoked!
+msg.unmute.logContent=**#%s** is now allowed to speak once more.
+
+msg.unban.logTitle=Exilement ceased!
+msg.unban.logContent=**#%s** has been allowed to enter our domain once more.

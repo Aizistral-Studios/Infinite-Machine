@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.Nullable;
 
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecProvider;
@@ -95,6 +98,20 @@ public class InfiniteDatabase {
         }
     }
 
+    public static boolean clearMute(long subjectId, long guildId) {
+        try {
+            var result = activePunishments.deleteOne(and(eq("type", ModerationAction.Type.MUTE), eq("subjectId", subjectId),
+                    eq("guildId", guildId)));
+            LOGGER.info("Cleared active mute for subject {} in guild {}, deletion count: {}", subjectId, guildId,
+                    result.getDeletedCount());
+
+            return result.getDeletedCount() > 0;
+        } catch (Exception ex) {
+            handleIOException(ex);
+            return false;
+        }
+    }
+
     public static boolean clearBan(long subjectId, long guildId) {
         try {
             var result = activePunishments.deleteOne(and(eq("type", ModerationAction.Type.BAN), eq("subjectId", subjectId),
@@ -102,24 +119,23 @@ public class InfiniteDatabase {
             LOGGER.info("Cleared active ban for subject {} in guild {}, deletion count: {}", subjectId, guildId,
                     result.getDeletedCount());
 
-            return result.wasAcknowledged();
+            return result.getDeletedCount() > 0;
         } catch (Exception ex) {
             handleIOException(ex);
             return false;
         }
     }
 
-    public static boolean clearWarning(int caseId, long guildId) {
+    public static Optional<ActivePunishment> clearWarning(int caseId, long guildId) {
         try {
-            var result = activePunishments.deleteOne(and(eq("type", ModerationAction.Type.WARNING), eq("caseId", caseId),
-                    eq("guildId", guildId)));
-            LOGGER.info("Cleared active warning #{} in guild {}, deletion count: {}", caseId, guildId,
-                    result.getDeletedCount());
+            var warning = activePunishments.findOneAndDelete(and(eq("type", ModerationAction.Type.WARNING),
+                    eq("caseId", caseId), eq("guildId", guildId)));
+            LOGGER.info("Cleared active warning #{} in guild {}: {}", caseId, guildId, warning);
 
-            return result.wasAcknowledged();
+            return Optional.ofNullable(warning);
         } catch (Exception ex) {
             handleIOException(ex);
-            return false;
+            return Optional.empty();
         }
     }
 
