@@ -125,3 +125,9 @@ audit.banExpired=Exilement duration expired.
 
 msg.unbanTitle=End of exilement
 msg.unbanDesc=As the duration of %s's exilement expired, they are free to enter our domain once more.
+
+msg.warnGlobalCount=Case #:
+msg.warnUserCount=Warning #:
+
+msg.pongReply=Pong!
+msg.pongReplyMs=Pong: %d ms

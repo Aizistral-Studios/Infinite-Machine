@@ -80,7 +80,7 @@ public class BanCommand extends PunishCommand {
     protected void handleSuccess(SlashCommandInteractionEvent event, Context context, User subject, User moderator,
             SimpleDuration duration, ModerationAction action, EmbedBuilder builder, InteractionHook hook) {
         super.handleSuccess(event, context, subject, moderator, duration, action, builder, hook);
-        InfiniteDatabase.registerPunishment(action, subject.getIdLong(), context.getGuild().getIdLong());
+        InfiniteDatabase.registerPunishment(action, subject.getIdLong(), context.getGuild().getIdLong(), -1);
     }
 
     @Override

@@ -33,6 +33,7 @@ public class UnpunishRoutine implements Routine {
                 InfiniteMachine.getInstanceFor(punishment.getGuildId()).ifPresent(machine -> {
                     long subjectId = punishment.getSubjectId();
                     long guildId = punishment.getGuildId();
+                    int caseId = punishment.getCaseId();
 
                     if (punishment.getType() == Type.BAN) {
                         machine.getGuild().unban(UserSnowflake.fromId(subjectId)).reason(Lang.get("audit.banExpired"))
@@ -56,6 +57,10 @@ public class UnpunishRoutine implements Routine {
                             LOGGER.error("Failed to unban subject {} in guild {} after expired ban:", error, subjectId,
                                     guildId);
                         });
+                    } else if (punishment.getType() == Type.WARNING) {
+                        LOGGER.info("Warning #{} removed from subject {} in guild {} since it expired.", caseId, subjectId,
+                                guildId);
+                        InfiniteDatabase.clearWarning(caseId, guildId);
                     }
                 });
             }

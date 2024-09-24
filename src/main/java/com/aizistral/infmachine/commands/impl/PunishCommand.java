@@ -1,6 +1,9 @@
 package com.aizistral.infmachine.commands.impl;
 
 import java.util.Optional;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nullable;
 
@@ -30,6 +33,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 
 public abstract class PunishCommand implements Command {
+    private final ReentrantLock lock = new ReentrantLock();
 
     protected abstract String getCommandName();
 
@@ -121,7 +125,8 @@ public abstract class PunishCommand implements Command {
         return true;
     }
 
-    private EmbedBuilder getReplyTemplate(User moderator, User subject, SimpleDuration duration, String reason) {
+    protected EmbedBuilder getReplyTemplate(Context context, User moderator, User subject, SimpleDuration duration,
+            String reason) {
         EmbedBuilder builder = new EmbedBuilder();
 
         builder.addField(Lang.get("msg.moderationAuthority"), "<@" + moderator.getId() + ">", true);
@@ -134,7 +139,7 @@ public abstract class PunishCommand implements Command {
         return builder;
     }
 
-    private MessageEmbed getLogEmbed(User moderator, User subject, SimpleDuration duration, String reason,
+    protected MessageEmbed getLogEmbed(User moderator, User subject, SimpleDuration duration, String reason,
             SlashCommandInteractionEvent event, Context context) {
         String subjectName = this.getSubjectDisplayName(event);
         String moderatorName = this.getModeratorDisplayName(event);
@@ -171,12 +176,15 @@ public abstract class PunishCommand implements Command {
         SimpleDuration duration = this.applyConstraints(SimpleDuration.fromString(durationStr));
         long timestamp = System.currentTimeMillis();
 
-        EmbedBuilder builder = this.getReplyTemplate(moderator, subject, duration, reason);
+        EmbedBuilder builder = this.getReplyTemplate(context, moderator, subject, duration, reason);
         ModerationAction action = new ModerationAction(this.getActionType(), guild.getIdLong(), moderator.getIdLong(),
                 subject.getIdLong(), reason, duration.toMillis(), timestamp, false);
 
         event.deferReply().queue(hook -> {
             try {
+                LOGGER.info("Received /{} command, acquiring thread lock...", this.getCommandName());
+                this.lock.lock();
+
                 Member memberSubject = event.getOption("subject", OptionMapping::getAsMember);
 
                 if (memberSubject != null) {
@@ -198,6 +206,9 @@ public abstract class PunishCommand implements Command {
                 });
             } catch (Exception ex) {
                 this.handleError(event, context, subject, action, builder, hook, ex);
+            } finally {
+                this.lock.unlock();
+                LOGGER.info("Command /{} handled, lock released.", this.getCommandName());
             }
         });
     }
@@ -213,18 +224,22 @@ public abstract class PunishCommand implements Command {
 
     protected void handleSuccess(SlashCommandInteractionEvent event, Context context, User subject, User moderator,
             SimpleDuration duration, ModerationAction action, EmbedBuilder builder, InteractionHook hook) {
-        builder.setColor(context.getConfig().getEmbedNormalColor());
-        builder.setDescription(context.getConfig().getCheckmarkEmoji() + " " + this.getActionSuccessDesc(
-                this.getSubjectDisplayName(event)));
         action.setSuccess(true);
-
-        hook.sendMessageEmbeds(builder.build()).queue();
+        hook.sendMessageEmbeds(this.completeSuccessReply(event, context, builder)).queue();
         InfiniteDatabase.logAction(action);
 
         context.getModerationLogChannel().ifPresent(channel -> {
             channel.sendMessageEmbeds(this.getLogEmbed(moderator, subject, duration, action.getReason(), event,
                     context)).queue();
         });
+    }
+
+    protected MessageEmbed completeSuccessReply(SlashCommandInteractionEvent event, Context context, EmbedBuilder builder) {
+        builder.setColor(context.getConfig().getEmbedNormalColor());
+        builder.setDescription(context.getConfig().getCheckmarkEmoji() + " " + this.getActionSuccessDesc(
+                this.getSubjectDisplayName(event)));
+
+        return builder.build();
     }
 
     protected void handleError(SlashCommandInteractionEvent event, Context context, User subject, ModerationAction action,

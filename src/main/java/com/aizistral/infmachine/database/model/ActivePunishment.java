@@ -14,13 +14,15 @@ import lombok.NoArgsConstructor;
 public class ActivePunishment {
     private ObjectId id = null;
     private ObjectId actionId = null;
+    private int caseId = -1;
     private long guildId = -1, subjectId = -1, timestamp = -1, duration = -1;
     private ModerationAction.Type type = null;
 
-    public ActivePunishment(ObjectId actionId, long guildId, long subjectId, long timestamp, long duration,
+    public ActivePunishment(ObjectId actionId, int caseId, long guildId, long subjectId, long timestamp, long duration,
             ModerationAction.Type type) {
         this.actionId = actionId;
         this.guildId = guildId;
+        this.caseId = caseId;
         this.subjectId = subjectId;
         this.timestamp = timestamp;
         this.duration = duration;

@@ -18,8 +18,8 @@ public class PingCommand implements Command {
     @Override
     public void onEvent(SlashCommandInteractionEvent event, Context context) {
         long time = System.currentTimeMillis();
-        event.reply("Pong!").setEphemeral(false).flatMap(v -> event.getHook().editOriginalFormat(
-                "Pong: %d ms", System.currentTimeMillis() - time)).queue();
+        event.reply(Lang.get("msg.pingReply")).setEphemeral(false).flatMap(v -> event.getHook().editOriginal(
+                Lang.get("msg.pingReplyMs", System.currentTimeMillis() - time))).queue();
     }
 
 }
