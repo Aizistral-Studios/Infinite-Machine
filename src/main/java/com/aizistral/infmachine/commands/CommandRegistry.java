@@ -12,7 +12,7 @@ import com.aizistral.infmachine.commands.impl.KillCommand;
 import com.aizistral.infmachine.commands.impl.MuteCommand;
 import com.aizistral.infmachine.commands.impl.PingCommand;
 import com.aizistral.infmachine.commands.impl.WarnCommand;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.utils.SimpleLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -74,11 +74,11 @@ public class CommandRegistry implements EventListener {
                             slashEvent.getFullCommandName());
 
                     if (!slashEvent.isAcknowledged()) {
-                        slashEvent.reply(Localization.get("msg.commandError")).queue();
+                        slashEvent.reply(Lang.get("msg.commandError")).queue();
                     }
                 }
             } else {
-                slashEvent.reply(Localization.get("msg.commandNotFound")).queue();
+                slashEvent.reply(Lang.get("msg.commandNotFound")).queue();
             }
         }
     }

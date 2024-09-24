@@ -7,9 +7,9 @@ import org.bson.Document;
 
 import com.aizistral.infmachine.commands.CommandRegistry;
 import com.aizistral.infmachine.config.InfiniteConfig;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.database.InfiniteDatabase;
-import com.aizistral.infmachine.handlers.RoutineHandler;
+import com.aizistral.infmachine.routines.RoutineHandler;
 import com.aizistral.infmachine.utils.SimpleLogger;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -38,7 +38,7 @@ public final class MachineBootstrap {
 
         try {
             InfiniteConfig.load();
-            Localization.load();
+            Lang.load();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -60,7 +60,7 @@ public final class MachineBootstrap {
                 GatewayIntent.DIRECT_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS
                 );
 
-        builder.setActivity(Activity.watching(Localization.get("activity.watching")));
+        builder.setActivity(Activity.watching(Lang.get("activity.watching")));
 
         jda = builder.build();
 

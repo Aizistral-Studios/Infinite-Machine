@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import javax.management.RuntimeErrorException;
 
@@ -20,6 +21,7 @@ import lombok.SneakyThrows;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
@@ -52,12 +54,35 @@ public class InfiniteMachine {
         return this.configLoader.getData();
     }
 
+    public Optional<StandardGuildMessageChannel> getModerationLogChannel() {
+        StandardGuildMessageChannel channel = this.guild.getChannelById(StandardGuildMessageChannel.class,
+                this.getConfig().getModerationLogChannel());
+
+        return Optional.ofNullable(channel);
+    }
+
     public boolean represents(Guild guild) {
-        return this.guild.getIdLong() == guild.getIdLong();
+        return this.represents(guild.getIdLong());
     }
 
     public static boolean instanceExistsFor(Guild guild) {
-        return INSTANCES.stream().anyMatch(machine -> machine.represents(guild));
+        return instanceExistsFor(guild.getIdLong());
+    }
+
+    public static Optional<InfiniteMachine> getInstanceFor(Guild guild) {
+        return getInstanceFor(guild.getIdLong());
+    }
+
+    public boolean represents(long guildId) {
+        return this.guild.getIdLong() == guildId;
+    }
+
+    public static boolean instanceExistsFor(long guildId) {
+        return getInstanceFor(guildId).isPresent();
+    }
+
+    public static Optional<InfiniteMachine> getInstanceFor(long guildId) {
+        return INSTANCES.stream().filter(machine -> machine.represents(guildId)).findAny();
     }
 
     public static List<InfiniteMachine> getInstances() {

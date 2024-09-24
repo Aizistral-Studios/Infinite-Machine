@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 
 import com.aizistral.infmachine.commands.Command;
 import com.aizistral.infmachine.commands.Command.Context;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.database.InfiniteDatabase;
 import com.aizistral.infmachine.database.model.ModerationAction;
 import com.aizistral.infmachine.database.model.ModerationAction.Type;
@@ -33,25 +33,27 @@ public abstract class PunishCommand implements Command {
 
     protected abstract String getCommandName();
 
+    public abstract ModerationAction.Type getActionType();
+
     protected abstract Optional<AuditableRestAction<Void>> getModerationAction(Guild guild, User subject,
             SimpleDuration duration, String reason, SlashCommandInteractionEvent event, Context context);
 
     protected String getActionFailDesc(String subjectName) {
-        return Localization.get("msg." + this.getCommandName() + "Desc.fail", subjectName);
+        return Lang.get("msg." + this.getCommandName() + "Desc.fail", subjectName);
     }
 
     protected String getActionSuccessDesc(String subjectName) {
-        return Localization.get("msg." + this.getCommandName() + "Desc.success", subjectName);
+        return Lang.get("msg." + this.getCommandName() + "Desc.success", subjectName);
     }
 
     protected String getActionLogDesc(String subjectName) {
-        return Localization.get("msg." + this.getCommandName() + "Desc.log", subjectName);
+        return Lang.get("msg." + this.getCommandName() + "Desc.log", subjectName);
     }
 
     @Override
     public SlashCommandData getData(Context context) {
         String name = this.getCommandName();
-        SlashCommandData data = Commands.slash(name, Localization.get("cmd." + name + ".desc"));
+        SlashCommandData data = Commands.slash(name, Lang.get("cmd." + name + ".desc"));
 
         data = this.addRequiredOptions(data, name);
         data = this.addOptionalOptions(data, name);
@@ -61,12 +63,12 @@ public abstract class PunishCommand implements Command {
     }
 
     protected SlashCommandData addRequiredOptions(SlashCommandData data, String name) {
-        return data.addOption(OptionType.USER, "subject", Localization.get("cmd." + name + ".subject.desc"), true)
-                .addOption(OptionType.STRING, "reason", Localization.get("cmd."+ name +".reason.desc"), true);
+        return data.addOption(OptionType.USER, "subject", Lang.get("cmd." + name + ".subject.desc"), true)
+                .addOption(OptionType.STRING, "reason", Lang.get("cmd."+ name +".reason.desc"), true);
     }
 
     protected SlashCommandData addOptionalOptions(SlashCommandData data, String name) {
-        return data.addOption(OptionType.STRING, "duration", Localization.get("cmd."+ name +".duration.desc"), false);
+        return data.addOption(OptionType.STRING, "duration", Lang.get("cmd."+ name +".duration.desc"), false);
     }
 
     protected SlashCommandData setDefaultPermissions(SlashCommandData data, String name) {
@@ -100,10 +102,10 @@ public abstract class PunishCommand implements Command {
 
     protected boolean checkPreconditions(SlashCommandInteractionEvent event, Context context) {
         if (event.getOption("subject", OptionMapping::getAsUser) == null) {
-            this.handleValidationError(Localization.get("msg.actionError.noMember"), event, context);
+            this.handleValidationError(Lang.get("msg.actionError.noMember"), event, context);
             return false;
         } else if (event.getOption("reason", OptionMapping::getAsString) == null) {
-            this.handleValidationError(Localization.get("msg.actionError.noReason"), event, context);
+            this.handleValidationError(Lang.get("msg.actionError.noReason"), event, context);
             return false;
         }
 
@@ -112,7 +114,7 @@ public abstract class PunishCommand implements Command {
         try {
             SimpleDuration.fromString(durationStr);
         } catch (IllegalArgumentException ex) {
-            this.handleValidationError(Localization.get("msg.actionError.invalidDuration", durationStr), event, context);
+            this.handleValidationError(Lang.get("msg.actionError.invalidDuration", durationStr), event, context);
             return false;
         }
 
@@ -122,12 +124,12 @@ public abstract class PunishCommand implements Command {
     private EmbedBuilder getReplyTemplate(User moderator, User subject, SimpleDuration duration, String reason) {
         EmbedBuilder builder = new EmbedBuilder();
 
-        builder.addField(Localization.get("msg.moderationAuthority"), "<@" + moderator.getId() + ">", true);
+        builder.addField(Lang.get("msg.moderationAuthority"), "<@" + moderator.getId() + ">", true);
         builder.addBlankField(true);
-        builder.addField(Localization.get("msg.moderationSubject"), "<@" + subject.getId() + ">", true);
-        builder.addField(Localization.get("msg.moderationDuration"), duration.getLocalized(), true);
+        builder.addField(Lang.get("msg.moderationSubject"), "<@" + subject.getId() + ">", true);
+        builder.addField(Lang.get("msg.moderationDuration"), duration.getLocalized(), true);
         builder.addBlankField(true);
-        builder.addField(Localization.get("msg.moderationReason"), reason, true);
+        builder.addField(Lang.get("msg.moderationReason"), reason, true);
 
         return builder;
     }
@@ -138,7 +140,7 @@ public abstract class PunishCommand implements Command {
         String moderatorName = this.getModeratorDisplayName(event);
         EmbedBuilder builder = new EmbedBuilder();
 
-        builder.setTitle(context.getConfig().getJusticeEmoji() + " " + Localization.get("msg.moderationActionTitle"));
+        builder.setTitle(context.getConfig().getJusticeEmoji() + " " + Lang.get("msg.moderationActionTitle"));
 
         builder.setColor(context.getConfig().getEmbedNormalColor());
         builder.setDescription(this.getActionLogDesc(subjectName));
@@ -146,12 +148,12 @@ public abstract class PunishCommand implements Command {
         moderatorName = "**" + moderatorName + "** (<@" + moderator.getId() + ">)";
         subjectName = "**" + subjectName + "** (<@" + subject.getId() + ">)";
 
-        builder.addField(Localization.get("msg.moderationAuthority"), moderatorName, true);
+        builder.addField(Lang.get("msg.moderationAuthority"), moderatorName, true);
         builder.addBlankField(true);
-        builder.addField(Localization.get("msg.moderationSubject"), subjectName, true);
-        builder.addField(Localization.get("msg.moderationDuration"), duration.getLocalized(), true);
+        builder.addField(Lang.get("msg.moderationSubject"), subjectName, true);
+        builder.addField(Lang.get("msg.moderationDuration"), duration.getLocalized(), true);
         builder.addBlankField(true);
-        builder.addField(Localization.get("msg.moderationReason"), reason, true);
+        builder.addField(Lang.get("msg.moderationReason"), reason, true);
 
         return builder.build();
     }
@@ -170,7 +172,7 @@ public abstract class PunishCommand implements Command {
         long timestamp = System.currentTimeMillis();
 
         EmbedBuilder builder = this.getReplyTemplate(moderator, subject, duration, reason);
-        ModerationAction action = new ModerationAction(Type.MUTE, guild.getIdLong(), moderator.getIdLong(),
+        ModerationAction action = new ModerationAction(this.getActionType(), guild.getIdLong(), moderator.getIdLong(),
                 subject.getIdLong(), reason, duration.toMillis(), timestamp, false);
 
         event.deferReply().queue(hook -> {
@@ -219,13 +221,10 @@ public abstract class PunishCommand implements Command {
         hook.sendMessageEmbeds(builder.build()).queue();
         InfiniteDatabase.logAction(action);
 
-        StandardGuildMessageChannel channel = context.getGuild().getChannelById(StandardGuildMessageChannel.class,
-                context.getConfig().getModerationLogChannel());
-
-        if (channel != null) {
+        context.getModerationLogChannel().ifPresent(channel -> {
             channel.sendMessageEmbeds(this.getLogEmbed(moderator, subject, duration, action.getReason(), event,
                     context)).queue();
-        }
+        });
     }
 
     protected void handleError(SlashCommandInteractionEvent event, Context context, User subject, ModerationAction action,

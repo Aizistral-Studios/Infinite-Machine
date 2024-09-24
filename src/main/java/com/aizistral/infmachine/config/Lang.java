@@ -12,14 +12,14 @@ import java.util.regex.Pattern;
 
 import com.aizistral.infmachine.utils.SimpleLogger;
 
-public class Localization {
+public class Lang {
     private static final SimpleLogger LOGGER = new SimpleLogger("Localization");
     private static final Map<String, String> LOCALIZATION = new HashMap<>();
 
     public static void load() throws IOException {
         LOGGER.info("Loading localization...");
 
-        InputStream stream = Localization.class.getResourceAsStream("/lang/local.lang");
+        InputStream stream = Lang.class.getResourceAsStream("/lang/local.lang");
         List<String> lines = new ArrayList<>();
 
         if (stream == null)

@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.aizistral.infmachine.commands.Command;
 import com.aizistral.infmachine.commands.Command.Context;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.database.InfiniteDatabase;
 import com.aizistral.infmachine.database.model.ModerationAction;
 import com.aizistral.infmachine.database.model.ModerationAction.Type;
@@ -37,6 +37,11 @@ public class MuteCommand extends PunishCommand {
     @Override
     protected String getCommandName() {
         return "mute";
+    }
+
+    @Override
+    public Type getActionType() {
+        return Type.MUTE;
     }
 
     @Override

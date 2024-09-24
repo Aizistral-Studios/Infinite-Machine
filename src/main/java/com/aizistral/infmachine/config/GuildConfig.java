@@ -13,6 +13,7 @@ public class GuildConfig {
     private String checkmarkEmoji = "[·]";
     private String crossmarkEmoji = "[x]";
     private String justiceEmoji = "[!]";
+    private String unpunishedEmoji = "[/]";
 
     public int getEmbedNormalColor() {
         return InfiniteConfig.getInstance().getEmbedColorDefault();

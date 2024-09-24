@@ -11,17 +11,20 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ActiveBan {
+public class ActivePunishment {
     private ObjectId id = null;
     private ObjectId actionId = null;
     private long guildId = -1, subjectId = -1, timestamp = -1, duration = -1;
+    private ModerationAction.Type type = null;
 
-    public ActiveBan(ObjectId actionId, long guildId, long subjectId, long timestamp, long duration) {
+    public ActivePunishment(ObjectId actionId, long guildId, long subjectId, long timestamp, long duration,
+            ModerationAction.Type type) {
         this.actionId = actionId;
         this.guildId = guildId;
         this.subjectId = subjectId;
         this.timestamp = timestamp;
         this.duration = duration;
+        this.type = type;
     }
 
 }

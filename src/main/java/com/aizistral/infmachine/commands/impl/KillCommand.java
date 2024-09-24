@@ -3,7 +3,7 @@ package com.aizistral.infmachine.commands.impl;
 import com.aizistral.infmachine.InfiniteMachine;
 import com.aizistral.infmachine.MachineBootstrap;
 import com.aizistral.infmachine.commands.Command;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
@@ -14,7 +14,7 @@ public class KillCommand implements Command {
 
     @Override
     public SlashCommandData getData(Context context) {
-        return Commands.slash("terminate", Localization.get("cmd.terminate.desc"))
+        return Commands.slash("terminate", Lang.get("cmd.terminate.desc"))
                 .setDefaultPermissions(DefaultMemberPermissions.DISABLED);
     }
 
@@ -23,7 +23,7 @@ public class KillCommand implements Command {
         if (!context.getConfig().isTrusted())
             return;
 
-        event.reply(Localization.get("msg.termination")).queue(hook -> {
+        event.reply(Lang.get("msg.termination")).queue(hook -> {
             MachineBootstrap.terminate();
         });
     }

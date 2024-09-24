@@ -4,7 +4,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import com.aizistral.infmachine.commands.Command.Context;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
+import com.aizistral.infmachine.database.model.ModerationAction.Type;
 import com.aizistral.infmachine.utils.SimpleDuration;
 
 import net.dv8tion.jda.api.Permission;
@@ -27,6 +28,11 @@ public class WarnCommand extends PunishCommand {
     @Override
     protected String getCommandName() {
         return "warn";
+    }
+
+    @Override
+    public Type getActionType() {
+        return Type.WARNING;
     }
 
     @Override

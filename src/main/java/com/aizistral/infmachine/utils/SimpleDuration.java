@@ -2,7 +2,7 @@ package com.aizistral.infmachine.utils;
 
 import java.util.concurrent.TimeUnit;
 
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 
 import lombok.Value;
 import lombok.With;
@@ -23,10 +23,10 @@ public class SimpleDuration {
 
     public String getLocalized() {
         if (this.duration <= 0)
-            return Localization.get("time.eternal");
+            return Lang.get("time.eternal");
 
         String key = "time." + this.timeUnit.name().toLowerCase() + (this.duration == 1 ? ".singular" : ".plural");
-        return Localization.get(key, this.duration);
+        return Lang.get(key, this.duration);
     }
 
     public static SimpleDuration fromString(String str) throws IllegalArgumentException {

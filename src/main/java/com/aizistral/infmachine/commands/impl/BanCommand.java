@@ -4,9 +4,10 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import com.aizistral.infmachine.commands.Command.Context;
-import com.aizistral.infmachine.config.Localization;
+import com.aizistral.infmachine.config.Lang;
 import com.aizistral.infmachine.database.InfiniteDatabase;
 import com.aizistral.infmachine.database.model.ModerationAction;
+import com.aizistral.infmachine.database.model.ModerationAction.Type;
 import com.aizistral.infmachine.utils.SimpleDuration;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -34,12 +35,17 @@ public class BanCommand extends PunishCommand {
     @Override
     protected SlashCommandData addOptionalOptions(SlashCommandData data, String name) {
         return super.addOptionalOptions(data, name)
-                .addOption(OptionType.STRING, "clear_time", Localization.get("cmd."+ name +".clear_time.desc"), false);
+                .addOption(OptionType.STRING, "clear_time", Lang.get("cmd."+ name +".clear_time.desc"), false);
     }
 
     @Override
     protected String getCommandName() {
         return "ban";
+    }
+
+    @Override
+    public Type getActionType() {
+        return Type.BAN;
     }
 
     @Override
@@ -52,7 +58,7 @@ public class BanCommand extends PunishCommand {
         try {
             SimpleDuration.fromString(clearStr);
         } catch (IllegalArgumentException ex) {
-            this.handleValidationError(Localization.get("msg.actionError.invalidDuration", clearStr), event, context);
+            this.handleValidationError(Lang.get("msg.actionError.invalidDuration", clearStr), event, context);
             return false;
         }
 
@@ -74,7 +80,7 @@ public class BanCommand extends PunishCommand {
     protected void handleSuccess(SlashCommandInteractionEvent event, Context context, User subject, User moderator,
             SimpleDuration duration, ModerationAction action, EmbedBuilder builder, InteractionHook hook) {
         super.handleSuccess(event, context, subject, moderator, duration, action, builder, hook);
-        InfiniteDatabase.registerBan(action, subject.getIdLong(), context.getGuild().getIdLong());
+        InfiniteDatabase.registerPunishment(action, subject.getIdLong(), context.getGuild().getIdLong());
     }
 
     @Override

@@ -13,7 +13,7 @@ import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 
 import com.aizistral.infmachine.config.InfiniteConfig;
-import com.aizistral.infmachine.database.model.ActiveBan;
+import com.aizistral.infmachine.database.model.ActivePunishment;
 import com.aizistral.infmachine.database.model.ModerationAction;
 import com.aizistral.infmachine.database.model.ModerationAction.Type;
 import com.aizistral.infmachine.utils.SimpleDuration;
@@ -38,7 +38,7 @@ public class InfiniteDatabase {
     private static MongoClient client;
     private static MongoDatabase machineDB;
     private static MongoCollection<ModerationAction> modActions;
-    private static MongoCollection<ActiveBan> activeBans;
+    private static MongoCollection<ActivePunishment> activePunishments;
 
     public static void initialize() {
         CodecProvider provider = PojoCodecProvider.builder().automatic(true).build();
@@ -49,7 +49,7 @@ public class InfiniteDatabase {
         client = MongoClients.create(mongoURI);
         machineDB = client.getDatabase("infinite-machine").withCodecRegistry(registry);
         modActions = machineDB.getCollection("moderation-actions", ModerationAction.class);
-        activeBans = machineDB.getCollection("active-bans", ActiveBan.class);
+        activePunishments = machineDB.getCollection("active-punishments", ActivePunishment.class);
     }
 
     private static void handleIOException(Exception ex) {
@@ -67,18 +67,18 @@ public class InfiniteDatabase {
         }
     }
 
-    public static boolean registerBan(ModerationAction action, long subjectId, long guildId) {
+    public static boolean registerPunishment(ModerationAction action, long subjectId, long guildId) {
         if (!action.isSuccess()) {
             LOGGER.error("Attempted to register failed ban, action: {}", action);
             return false;
         }
 
         try {
-            ActiveBan ban = new ActiveBan(action.getId(), guildId, subjectId, action.getTimestamp(),
-                    action.getDuration());
-            boolean result = activeBans.insertOne(ban).wasAcknowledged();
+            ActivePunishment punishment = new ActivePunishment(action.getId(), guildId, subjectId, action.getTimestamp(),
+                    action.getDuration(), action.getType());
+            boolean result = activePunishments.insertOne(punishment).wasAcknowledged();
 
-            LOGGER.info("Registered active ban: {}, acknowledged: {}", ban, result);
+            LOGGER.info("Registered active ban: {}, acknowledged: {}", punishment, result);
             return result;
         } catch (Exception ex) {
             handleIOException(ex);
@@ -88,7 +88,8 @@ public class InfiniteDatabase {
 
     public static boolean clearBan(long subjectId, long guildId) {
         try {
-            var result = activeBans.deleteOne(and(eq("subjectId", subjectId), eq("guildId", guildId)));
+            var result = activePunishments.deleteOne(and(eq("type", ModerationAction.Type.BAN), eq("subjectId", subjectId),
+                    eq("guildId", guildId)));
             LOGGER.info("Cleared active ban for subject {} in guild {}, deletion count: {}", subjectId, guildId,
                     result.getDeletedCount());
 
@@ -99,10 +100,10 @@ public class InfiniteDatabase {
         }
     }
 
-    public static List<ActiveBan> getActiveBans() {
-        List<ActiveBan> bans = new ArrayList<>();
-        activeBans.find().into(bans);
-        return ImmutableList.copyOf(bans);
+    public static List<ActivePunishment> getActivePunishments() {
+        List<ActivePunishment> punishments = new ArrayList<>();
+        activePunishments.find().into(punishments);
+        return ImmutableList.copyOf(punishments);
     }
 
 }

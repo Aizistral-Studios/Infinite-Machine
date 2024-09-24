@@ -121,4 +121,7 @@ time.hours.plural=%s hours
 time.days.plural=%s days
 
 time.eternal=Until the end of times
-msg.banExpired=Exilement duration expired.
+audit.banExpired=Exilement duration expired.
+
+msg.unbanTitle=End of exilement
+msg.unbanDesc=As the duration of %s's exilement expired, they are free to enter our domain once more.
